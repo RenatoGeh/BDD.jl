@@ -1,5 +1,317 @@
+# Port of the pyddlib.
+# See https://github.com/thiagopbueno/pyddlib/.
+
 module BDD
 
-greet() = print("Hello World!")
+nextid = 1
+
+mutable struct Diagram
+  "Root vertex variable index (-1 if terminal vertex)."
+  index::Int
+  "Low child vertex of BDD (undef if terminal vertex)."
+  low::Diagram
+  "High child vertex of BDD (undef if terminal vertex)."
+  high::Diagram
+  "Terminal boolean value."
+  value::Bool
+  "Unique identifier."
+  id::Int
+  "Constructs a terminal."
+  function Diagram(v::Bool)
+    α = new()
+    α.index, α.value, α.id = -1, v, nextid
+    nextid = (nextid + 1) % typemax(Int)
+    return α
+  end
+  "Constructs a variable."
+  function Diagram(i::Int, low::Diagram, high::Diagram)
+    α = new()
+    α.index, α.low, α.high, α.id = i, low, high, nextid
+    nextid = (nextid + 1) % typemax(Int)
+    return α
+  end
+end
+export Diagram
+
+const ⊤ = Diagram(true)
+const ⊥ = Diagram(false)
+export ⊤, ⊥
+
+"Returns whether this Diagram node is terminal."
+@inline isterminal(α::Diagram)::Bool = !isdefined(α, :low) && !isdefined(α, :high)
+export isterminal
+
+"Returns whether the given Diagram node represents a ⊤."
+@inline is_⊤(α::Diagram)::Bool = isterminal(α) && α.value
+export is_⊤
+
+"Returns whether the given Diagram node represents a ⊥."
+@inline is_⊥(α::Diagram)::Bool = isterminal(α) && !α.value
+export is_⊥
+
+"Returns whether the given Diagram node represents a variable."
+@inline is_var(α::Diagram)::Bool = (isdefined(α, :low) && is_⊥(α.low)) &&
+                                   (isdefined(α, :high) && is_⊤(α.high))
+export is_var
+
+"Negates this boolean function."
+@inline (¬)(α::Diagram)::Diagram = is_⊤(α) ? ⊥ : is_⊥(α) ? ⊤ : Diagram(α.index, ¬α.low, ¬α.high)
+
+"Returns a conjunction over the given boolean functions."
+@inline (∧)(α::Diagram, β::Diagram)::Diagram = apply(α, β, &)
+"Returns a conjunction over the given boolean functions."
+@inline and(α::Diagram, β::Diagram)::Diagram = α ∧ β
+export and
+
+"Returns a disjunction over the given boolean functions."
+@inline (∨)(α::Diagram, β::Diagram)::Diagram = apply(α, β, |)
+"Returns a disjunction over the given boolean functions."
+@inline or(α::Diagram, β::Diagram)::Diagram = α ∨ β
+export or
+
+"Returns a xor of the given boolean functions."
+@inline (⊻)(α::Diagram, β::Diagram)::Diagram = apply(α, β, ⊻)
+"Returns a xor of the given boolean functions."
+@inline xor(α::Diagram, β::Diagram)::Diagram = α ⊻ β
+export xor
+
+"Returns whether the two given boolean functions are equivalent."
+@inline Base.:(==)(α::Diagram, β::Diagram)::Bool = is_⊤(apply(α, β, ==))
+
+"Returns whether the two given boolean functions are not equivalent."
+@inline Base.:(!=)(α::Diagram, β::Diagram)::Bool = !(α == β)
+"Returns whether the two given boolean functions are not equivalent."
+@inline Base.:≠(α::Diagram, β::Diagram)::Bool = α != β
+
+"Returns a new terminal node of given boolean value."
+terminal(v::Bool)::Diagram = Diagram(v)
+export terminal
+
+"Returns a Diagram representing a single variable. If negative, negate variable."
+variable(i::Int)::Diagram = i > 0 ? Diagram(i, ⊥, ⊤) : Diagram(i, ⊤, ⊥)
+export variable
+
+"Return string representation of Diagram α."
+function Base.string(α::Diagram)::String
+  s = ""
+  S = Tuple{Diagram, Int, Char}[(α, 0, '\0')]
+  while !isempty(S)
+    v, indent, c = pop!(S)
+    for i ∈ 1:indent s += "|  " end
+    s += c == '\0' ? '@' : c
+    if isterminal(v)
+      s += isterminal(v) ? " (value=$(v.value), id=$(v.id))\n" :
+    else
+      s += " (index=$(v.index), id=$(v.id))\n"
+      push!(S, (v.high, indent + 1, '+'))
+      push!(S, (v.low, indent + 1, '-'))
+    end
+  end
+  return s
+end
+Base.show(io::Core.IO, α::Diagram) = show(io, string(α))
+Base.print(io::Core.IO, α::Diagram) = print(io, string(α))
+
+let V::Set{Diagram}(), Q::Vector{Diagram}()
+  function Base.iterate(α::Diagram, state=1)::Union{Nothing, Tuple{Diagram, Integer}}
+    if state == 1
+      Q = Diagram[α]
+      V = Set{Diagram}()
+    end
+    if isempty(Q) return nothing end
+    v = pop!(Q)
+    union!(V, v)
+    if !isterminal(v)
+      l, h = v.low, v.high
+      if l ∉ V push!(Q, l) end
+      if h ∉ V push!(Q, h) end
+    end
+    return v, state+1
+  end
+end
+
+function Base.foreach(f::Function, α::Diagram)
+  V = Set{Diagram}()
+  Q = Diagram[α]
+  while !isempty(Q)
+    v = pop!(Q)
+    union!(V, v)
+    if !isterminal(v)
+      l, h = v.low, v.high
+      if l ∉ V push!(Q, l) end
+      if h ∉ V push!(Q, h) end
+    end
+    f(v)
+  end
+end
+
+function Base.collect(α::Diagram)::Vector{Diagram}
+  V = Set{Diagram}()
+  Q = Diagram[a]
+  C = Vector{Diagram}()
+  while !isempty(Q)
+    v = pop!(Q)
+    union!(V, v)
+    if !isterminal(v)
+      l, h = v.low, v.high
+      if l ∉ V push!(Q, l) end
+      if h ∉ V push!(Q, h) end
+    end
+    push!(C, v)
+  end
+end
+
+"""Reduce a Diagram rooted at α inplace, removing duplicate nodes and redundant sub-trees. Returns
+canonical representation of α."""
+function reduce!(α::Diagram)::Diagram
+  if isterminal(α) return α end
+
+  V = Dict{Int, Vector{Diagram}}()
+  foreach(function(v::Diagram)
+            i = v.index
+            haskey(V, i) ? push!(V[i], v) : V[i] = Diagram[v]
+          end, α)
+
+  nid = 0
+  G = Dict{Int, Diagram}()
+  I = sort!(collect(keys(V)), rev=true); pop!(I); pushfirst!(I, -1)
+  for i ∈ I
+    Q = Vector{Tuple{Tuple{Int, Int}, Diagram}}()
+    for v ∈ V[i]
+      if isterminal(v) push!(Q, ((Int(v.value), -1), v))
+      elseif v.low.id == v.high.id v.id = v.low.id
+      else push!(Q, ((v.low.id, v.high.id), v))
+    end
+    sort!(Q, by=first)
+    local oldk::Tuple{Int, Int} = (-1, -1)
+    for (k, v) ∈ Q
+      if k == oldk v.id = nid
+      else
+        nid += 1
+        v.id = nid
+        G[nid] = v
+        if !isterminal(v)
+          v.low = G[v.low.id]
+          v.high = G[v.high.id]
+        end
+        oldk = k
+      end
+    end
+  end
+  return G[α.id]
+end
+export reduce!
+
+function Base.copy(α::Diagram)::Diagram
+
+"Returns a Diagram canonical representation of α ⊕ β, where ⊕ is some binary operator."
+@inline apply(α::Diagram, β::Diagram, ⊕::Function) = reduce!(apply_step(α, β, ⊕, Dict{Tuple{Int, Int}, Diagram}()))
+export apply
+
+"""Recursively computes α ⊕ β. If the result was already computed as an intermediate result, return
+the cached result in T."""
+function apply_step(α::Diagram, β::Diagram, ⊕::Function, T::Dict{Tuple{Int, Int}, Diagram})::Diagram
+  local k::Tuple{Int, Int} = (α.id, β.id)
+  if haskey(T, k) return T[k] end
+
+  local r::Diagram
+  if isterminal(α) && isterminal(β) r = Diagram(α.value ⊕ β.value)
+  else
+    local i::Int = typemax(Int)
+    local j::Int = i
+
+    if !isterminal(α) i = α.index end
+    if !isterminal(β) j = β.index end
+    m = min(i, j)
+
+    local l1::Diagram, h1::Diagram
+    if i == m l1, h1 = α.low, α.high
+    else l1 = h1 = α end
+
+    local l2::Diagram, h2::Diagram
+    if j == m l2, h2 = β.low, β.high
+    else l2 = h2 = β end
+
+    l = apply_step(l1, l2, ⊕, T)
+    h = apply_step(h1, h2, ⊕, T)
+    r = Diagram(m, l, h)
+  end
+
+  T[k] = r
+  return r
+end
+
+"Returns a new reduced Diagram restricted to instantiation X."
+@inline restrict(α::Diagram, X::Dict{Int, Bool})::Diagram = reduce!(α, restrict_step(X))
+export restrict
+"Returns a new reduced Diagram restricted to instantiation X."
+@inline (|)(α::Diagram, X::Dict{Int, Bool})::Diagram = restrict(α, X)
+
+"Returns a new Diagram restricted to instantiation X."
+function restrict_step(α::Diagram, X::Dict{Int, Bool})::Diagram
+  if isterminal(α) return α end
+  x = α.index
+  if haskey(X, x)
+    l = restrict_step(α.low, X)
+    h = restrict_step(α.high, X)
+    return Diagram(x, l, h)
+  end
+  if X[x] return restrict_step(α.high, X) end
+  return restrict_step(α.low, X) end
+end
+
+struct Permutations
+  V::Union{Set{Int}, Vector{Int}}
+  m::Int
+end
+
+"Compute all possible valuations of scope V."
+@inline valuations(V::Union{Set{Int}, Vector{Int}}) = Permutations(V, 2^length(V))
+function Base.iterate(P::Permutations, state=0)::Union{Nothing, Tuple{Vector{Dict{Int, Bool}, Int}}}
+  s = state + 1
+  if state == 0 return Dict{Int, Bool}(broadcast(x -> abs(x) => false, P.V)), s end
+  if state > P.m return nothing end
+  return Dict{Int, Bool}(broadcast(x -> abs(x) => x > 0, P.V)), s
+end
+
+"Performs Shannon's Decomposition on the Diagram α, given a variable to isolate."
+function shannon(α::Diagram, v::Int)::Tuple{Diagram, Diagram, Diagram, Diagram}
+  return (variable(v), α|Dict{Int, Bool}(v=>true), variable(-v), α|Dict{Int, Bool}(v=>false))
+end
+
+"Performs Shannon's Decomposition on the Diagram α, given a set of variables to isolate."
+function shannon(α::Diagram, V::Union{Set{Int}, Vector{Int}})::Vector{Tuple{Diagram, Diagram}}
+  Δ = Vector{Tuple{Diagram, Diagram}}()
+  for X ∈ valuations(V)
+    local f = true
+    local ⋀::Diagram
+    for (v, x) ∈ X
+      β = variable(x ? v : -v)
+      if f ⋀ = β; f = false
+      else ⋀ = ⋀ ∧ β end
+    end
+    push!(Δ, (⋀, α|X))
+  end
+  return Δ
+end
+
+"""Performs Shannon's Decomposition on the Diagram α, given a set of variables to isolate. Any
+decomposition that results in a ⊥ is discarded."""
+function shannon!(α::Diagram, V::Union{Set{Int}, Vector{Int}})::Vector{Tuple{Diagram, Diagram}}
+  Δ = Vector{Tuple{Diagram, Diagram}}()
+  for X ∈ valuations(V)
+    ϕ = a|X
+    if is_⊥(ϕ) continue end
+    local f = true
+    local ⋀::Diagram
+    for (v, x) ∈ X
+      β = variable(x ? v : -v)
+      if f ⋀ = β; f = false
+      else ⋀ = ⋀ ∧ β end
+    end
+    push!(Δ, (⋀, ϕ))
+  end
+  return Δ
+end
 
 end # module
