@@ -19,6 +19,7 @@ mutable struct Diagram
   "Constructs a terminal."
   function Diagram(v::Bool)
     α = new()
+    global nextid
     α.index, α.value, α.id = -1, v, nextid
     nextid = (nextid + 1) % typemax(Int)
     return α
@@ -26,6 +27,7 @@ mutable struct Diagram
   "Constructs a variable."
   function Diagram(i::Int, low::Diagram, high::Diagram)
     α = new()
+    global nextid
     α.index, α.low, α.high, α.id = i, low, high, nextid
     nextid = (nextid + 1) % typemax(Int)
     return α
@@ -37,16 +39,20 @@ const ⊤ = Diagram(true)
 const ⊥ = Diagram(false)
 export ⊤, ⊥
 
+# We could do with only α.id, but on an extreme case where there is an enormous (quite enormous)
+# number of Diagram constructions, this might loop back and having non-unique hashes.
+@inline Base.hash(α::Diagram, h::UInt) = is_var(α) ? α.index : hash((α.index, α.id), h)
+
 "Returns whether this Diagram node is terminal."
-@inline isterminal(α::Diagram)::Bool = !isdefined(α, :low) && !isdefined(α, :high)
-export isterminal
+@inline is_term(α::Diagram)::Bool = !isdefined(α, :low) && !isdefined(α, :high)
+export is_term
 
 "Returns whether the given Diagram node represents a ⊤."
-@inline is_⊤(α::Diagram)::Bool = isterminal(α) && α.value
+@inline is_⊤(α::Diagram)::Bool = is_term(α) && α.value
 export is_⊤
 
 "Returns whether the given Diagram node represents a ⊥."
-@inline is_⊥(α::Diagram)::Bool = isterminal(α) && !α.value
+@inline is_⊥(α::Diagram)::Bool = is_term(α) && !α.value
 export is_⊥
 
 "Returns whether the given Diagram node represents a variable."
@@ -77,11 +83,10 @@ export xor
 
 "Returns whether the two given boolean functions are equivalent."
 @inline Base.:(==)(α::Diagram, β::Diagram)::Bool = is_⊤(apply(α, β, ==))
+@inline Base.isequal(α::Diagram, β::Diagram)::Bool = α == β
 
 "Returns whether the two given boolean functions are not equivalent."
 @inline Base.:(!=)(α::Diagram, β::Diagram)::Bool = !(α == β)
-"Returns whether the two given boolean functions are not equivalent."
-@inline Base.:≠(α::Diagram, β::Diagram)::Bool = α != β
 
 "Returns a new terminal node of given boolean value."
 terminal(v::Bool)::Diagram = Diagram(v)
@@ -97,12 +102,12 @@ function Base.string(α::Diagram)::String
   S = Tuple{Diagram, Int, Char}[(α, 0, '\0')]
   while !isempty(S)
     v, indent, c = pop!(S)
-    for i ∈ 1:indent s += "|  " end
-    s += c == '\0' ? '@' : c
-    if isterminal(v)
-      s += isterminal(v) ? " (value=$(v.value), id=$(v.id))\n" :
+    for i ∈ 1:indent s *= "|  " end
+    s *= c == '\0' ? '@' : c
+    if is_term(v)
+      s *= " (value=$(v.value), id=$(v.id))\n"
     else
-      s += " (index=$(v.index), id=$(v.id))\n"
+      s *= " (index=$(v.index), id=$(v.id))\n"
       push!(S, (v.high, indent + 1, '+'))
       push!(S, (v.low, indent + 1, '-'))
     end
@@ -121,7 +126,7 @@ let V::Set{Diagram}(), Q::Vector{Diagram}()
     if isempty(Q) return nothing end
     v = pop!(Q)
     union!(V, v)
-    if !isterminal(v)
+    if !is_term(v)
       l, h = v.low, v.high
       if l ∉ V push!(Q, l) end
       if h ∉ V push!(Q, h) end
@@ -135,8 +140,8 @@ function Base.foreach(f::Function, α::Diagram)
   Q = Diagram[α]
   while !isempty(Q)
     v = pop!(Q)
-    union!(V, v)
-    if !isterminal(v)
+    push!(V, v)
+    if !is_term(v)
       l, h = v.low, v.high
       if l ∉ V push!(Q, l) end
       if h ∉ V push!(Q, h) end
@@ -152,7 +157,7 @@ function Base.collect(α::Diagram)::Vector{Diagram}
   while !isempty(Q)
     v = pop!(Q)
     union!(V, v)
-    if !isterminal(v)
+    if !is_term(v)
       l, h = v.low, v.high
       if l ∉ V push!(Q, l) end
       if h ∉ V push!(Q, h) end
@@ -164,7 +169,7 @@ end
 """Reduce a Diagram rooted at α inplace, removing duplicate nodes and redundant sub-trees. Returns
 canonical representation of α."""
 function reduce!(α::Diagram)::Diagram
-  if isterminal(α) return α end
+  if is_term(α) return α end
 
   V = Dict{Int, Vector{Diagram}}()
   foreach(function(v::Diagram)
@@ -178,19 +183,19 @@ function reduce!(α::Diagram)::Diagram
   for i ∈ I
     Q = Vector{Tuple{Tuple{Int, Int}, Diagram}}()
     for v ∈ V[i]
-      if isterminal(v) push!(Q, ((Int(v.value), -1), v))
+      if is_term(v) push!(Q, ((Int(v.value), -1), v))
       elseif v.low.id == v.high.id v.id = v.low.id
-      else push!(Q, ((v.low.id, v.high.id), v))
+      else push!(Q, ((v.low.id, v.high.id), v)) end
     end
     sort!(Q, by=first)
-    local oldk::Tuple{Int, Int} = (-1, -1)
+    local oldk::Tuple{Int, Int} = (-2, -2)
     for (k, v) ∈ Q
       if k == oldk v.id = nid
       else
         nid += 1
         v.id = nid
         G[nid] = v
-        if !isterminal(v)
+        if !is_term(v)
           v.low = G[v.low.id]
           v.high = G[v.high.id]
         end
@@ -203,25 +208,28 @@ end
 export reduce!
 
 function Base.copy(α::Diagram)::Diagram
+  if is_term(α) return is_⊤(δ) ? ⊤ : ⊥ end
+  return Diagram(α.index, copy(α.low), copy(α.high))
+end
 
 "Returns a Diagram canonical representation of α ⊕ β, where ⊕ is some binary operator."
-@inline apply(α::Diagram, β::Diagram, ⊕::Function) = reduce!(apply_step(α, β, ⊕, Dict{Tuple{Int, Int}, Diagram}()))
+@inline apply(α::Diagram, β::Diagram, ⊕) = reduce!(apply_step(α, β, ⊕, Dict{Tuple{Int, Int}, Diagram}()))
 export apply
 
 """Recursively computes α ⊕ β. If the result was already computed as an intermediate result, return
 the cached result in T."""
-function apply_step(α::Diagram, β::Diagram, ⊕::Function, T::Dict{Tuple{Int, Int}, Diagram})::Diagram
+function apply_step(α::Diagram, β::Diagram, ⊕, T::Dict{Tuple{Int, Int}, Diagram})::Diagram
   local k::Tuple{Int, Int} = (α.id, β.id)
   if haskey(T, k) return T[k] end
 
   local r::Diagram
-  if isterminal(α) && isterminal(β) r = Diagram(α.value ⊕ β.value)
+  if is_term(α) && is_term(β) r = Diagram(α.value ⊕ β.value)
   else
     local i::Int = typemax(Int)
     local j::Int = i
 
-    if !isterminal(α) i = α.index end
-    if !isterminal(β) j = β.index end
+    if !is_term(α) i = α.index end
+    if !is_term(β) j = β.index end
     m = min(i, j)
 
     local l1::Diagram, h1::Diagram
@@ -249,7 +257,7 @@ export restrict
 
 "Returns a new Diagram restricted to instantiation X."
 function restrict_step(α::Diagram, X::Dict{Int, Bool})::Diagram
-  if isterminal(α) return α end
+  if is_term(α) return α end
   x = α.index
   if haskey(X, x)
     l = restrict_step(α.low, X)
@@ -257,7 +265,7 @@ function restrict_step(α::Diagram, X::Dict{Int, Bool})::Diagram
     return Diagram(x, l, h)
   end
   if X[x] return restrict_step(α.high, X) end
-  return restrict_step(α.low, X) end
+  return restrict_step(α.low, X)
 end
 
 struct Permutations
@@ -294,6 +302,7 @@ function shannon(α::Diagram, V::Union{Set{Int}, Vector{Int}})::Vector{Tuple{Dia
   end
   return Δ
 end
+export shannon
 
 """Performs Shannon's Decomposition on the Diagram α, given a set of variables to isolate. Any
 decomposition that results in a ⊥ is discarded."""
@@ -313,5 +322,6 @@ function shannon!(α::Diagram, V::Union{Set{Int}, Vector{Int}})::Vector{Tuple{Di
   end
   return Δ
 end
+export shannon!
 
 end # module
