@@ -39,9 +39,7 @@ const ⊤ = Diagram(true)
 const ⊥ = Diagram(false)
 export ⊤, ⊥
 
-# We could do with only α.id, but on an extreme case where there is an enormous (quite enormous)
-# number of Diagram constructions, this might loop back and having non-unique hashes.
-@inline Base.hash(α::Diagram, h::UInt) = is_var(α) ? α.index : hash((α.index, α.id), h)
+@inline Base.hash(α::Diagram, h::UInt) = hash(α.id, h)
 
 "Returns whether this Diagram node is terminal."
 @inline is_term(α::Diagram)::Bool = !isdefined(α, :low) && !isdefined(α, :high)
@@ -117,50 +115,47 @@ end
 Base.show(io::Core.IO, α::Diagram) = show(io, string(α))
 Base.print(io::Core.IO, α::Diagram) = print(io, string(α))
 
-let V::Set{Diagram}(), Q::Vector{Diagram}()
+let V::Dict{Int, Diagram}, Q::Vector{Diagram}
   function Base.iterate(α::Diagram, state=1)::Union{Nothing, Tuple{Diagram, Integer}}
     if state == 1
       Q = Diagram[α]
-      V = Set{Diagram}()
+      V = Dict{Int, Diagram}(α.id => α)
     end
     if isempty(Q) return nothing end
-    v = pop!(Q)
-    union!(V, v)
+    v = popfirst!(Q)
     if !is_term(v)
       l, h = v.low, v.high
-      if l ∉ V push!(Q, l) end
-      if h ∉ V push!(Q, h) end
+      if !haskey(V, l.id) push!(Q, l); V[l.id] = l end
+      if !haskey(V, h.id) push!(Q, h); V[h.id] = h end
     end
     return v, state+1
   end
 end
 
 function Base.foreach(f::Function, α::Diagram)
-  V = Set{Diagram}()
+  V = Dict{Int, Diagram}(α.id => α)
   Q = Diagram[α]
   while !isempty(Q)
-    v = pop!(Q)
-    push!(V, v)
+    v = popfirst!(Q)
     if !is_term(v)
       l, h = v.low, v.high
-      if l ∉ V push!(Q, l) end
-      if h ∉ V push!(Q, h) end
+      if !haskey(V, l.id) push!(Q, l); V[l.id] = l end
+      if !haskey(V, h.id) push!(Q, h); V[h.id] = h end
     end
     f(v)
   end
 end
 
 function Base.collect(α::Diagram)::Vector{Diagram}
-  V = Set{Diagram}()
-  Q = Diagram[a]
+  V = Dict{Int, Diagram}(α.id => α)
+  Q = Diagram[α]
   C = Vector{Diagram}()
   while !isempty(Q)
-    v = pop!(Q)
-    union!(V, v)
+    v = popfirst!(Q)
     if !is_term(v)
       l, h = v.low, v.high
-      if l ∉ V push!(Q, l) end
-      if h ∉ V push!(Q, h) end
+      if !haskey(V, l.id) push!(Q, l); V[l.id] = l end
+      if !haskey(V, h.id) push!(Q, h); V[h.id] = h end
     end
     push!(C, v)
   end
