@@ -60,24 +60,24 @@ export is_var
 
 "Negates this boolean function."
 @inline (¬)(α::Diagram)::Diagram = is_⊤(α) ? ⊥ : is_⊥(α) ? ⊤ : Diagram(α.index, ¬α.low, ¬α.high)
+export ¬
 
 "Returns a conjunction over the given boolean functions."
 @inline (∧)(α::Diagram, β::Diagram)::Diagram = apply(α, β, &)
+export ∧
 "Returns a conjunction over the given boolean functions."
 @inline and(α::Diagram, β::Diagram)::Diagram = α ∧ β
 export and
 
 "Returns a disjunction over the given boolean functions."
 @inline (∨)(α::Diagram, β::Diagram)::Diagram = apply(α, β, |)
+export ∨
 "Returns a disjunction over the given boolean functions."
 @inline or(α::Diagram, β::Diagram)::Diagram = α ∨ β
 export or
 
 "Returns a xor of the given boolean functions."
-@inline (⊻)(α::Diagram, β::Diagram)::Diagram = apply(α, β, ⊻)
-"Returns a xor of the given boolean functions."
-@inline xor(α::Diagram, β::Diagram)::Diagram = α ⊻ β
-export xor
+@inline Base.:⊻(α::Diagram, β::Diagram)::Diagram = apply(α, β, ⊻)
 
 "Returns whether the two given boolean functions are equivalent."
 @inline Base.:(==)(α::Diagram, β::Diagram)::Bool = is_⊤(apply(α, β, ==))
@@ -245,16 +245,16 @@ function apply_step(α::Diagram, β::Diagram, ⊕, T::Dict{Tuple{Int, Int}, Diag
 end
 
 "Returns a new reduced Diagram restricted to instantiation X."
-@inline restrict(α::Diagram, X::Dict{Int, Bool})::Diagram = reduce!(α, restrict_step(X))
+@inline restrict(α::Diagram, X::Dict{Int, Bool})::Diagram = reduce!(restrict_step(α, X))
 export restrict
 "Returns a new reduced Diagram restricted to instantiation X."
-@inline (|)(α::Diagram, X::Dict{Int, Bool})::Diagram = restrict(α, X)
+@inline Base.:|(α::Diagram, X::Dict{Int, Bool})::Diagram = restrict(α, X)
 
 "Returns a new Diagram restricted to instantiation X."
 function restrict_step(α::Diagram, X::Dict{Int, Bool})::Diagram
   if is_term(α) return α end
   x = α.index
-  if haskey(X, x)
+  if !haskey(X, x)
     l = restrict_step(α.low, X)
     h = restrict_step(α.high, X)
     return Diagram(x, l, h)
@@ -264,17 +264,17 @@ function restrict_step(α::Diagram, X::Dict{Int, Bool})::Diagram
 end
 
 struct Permutations
-  V::Union{Set{Int}, Vector{Int}}
+  V::Vector{Int}
   m::Int
 end
 
 "Compute all possible valuations of scope V."
-@inline valuations(V::Union{Set{Int}, Vector{Int}}) = Permutations(V, 2^length(V))
-function Base.iterate(P::Permutations, state=0)::Union{Nothing, Tuple{Vector{Dict{Int, Bool}, Int}}}
+@inline valuations(V::Union{Set{Int}, Vector{Int}, UnitRange{Int}}) = Permutations(collect(V), 2^length(V))
+function Base.iterate(P::Permutations, state=0)::Union{Nothing, Tuple{Dict{Int, Bool}, Int}}
   s = state + 1
   if state == 0 return Dict{Int, Bool}(broadcast(x -> abs(x) => false, P.V)), s end
-  if state > P.m return nothing end
-  return Dict{Int, Bool}(broadcast(x -> abs(x) => x > 0, P.V)), s
+  if state >= P.m return nothing end
+  return Dict{Int, Bool}((i -> i => (state >> (i-1)) & 1 == 1).(1:length(P.V))), s
 end
 
 "Performs Shannon's Decomposition on the Diagram α, given a variable to isolate."
