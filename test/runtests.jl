@@ -52,7 +52,7 @@ end
   d = Diagram(2, ⊥, b)
   e = Diagram(1, d, c)
   R = reduce!(e)
-  E = Union{Int, Bool}[1, 2, 3, false, true]
+  E = Union{Int, Bool}[1, 2, false, 3, true]
   i = 1
   foreach(function(α::Diagram)
             v = E[i]
@@ -110,4 +110,186 @@ end
   f3 = ¬x2 ∨ x3
   E = Diagram[⊤, ⊤, ⊥, ⊥, ⊤, ⊤, ⊤, ⊤, ⊤, ⊤, ⊥, ⊥, ⊤, ⊤, ⊤, ⊤]
   for (i, y) ∈ enumerate(valuations(1:4)) f3|y == E[i] end
+end
+
+@testset "Negate" begin
+  @test ⊤ == ¬⊥
+  @test ⊥ == ¬⊤
+
+  X′ = Diagram[¬x for x ∈ X]
+  for (i, x) ∈ enumerate(X′)
+    @test !is_term(x)
+    @test x.index == i
+    @test !x.high.value
+    @test x.low.value
+  end
+
+  a = Diagram(3, ⊥, ⊤)
+  b = Diagram(2, ⊥, a)
+  c = Diagram(1, b, a)
+  d = ¬c
+  E = Union{Int, Bool}[1, 2, true, 3, false, 3]
+  i = 1
+  foreach(function(α::Diagram)
+            v = E[i]
+            if is_term(α) @test v == α.value
+            else @test v == α.index end
+            i += 1
+          end, d)
+end
+
+@testset "Conjunction" begin
+  # Idempotency.
+  @test ⊤ ∧ ⊤ == ⊤
+  @test ⊥ ∧ ⊥ == ⊥
+  @test x1 ∧ x1 == x1
+  @test x2 ∧ x2 == x2
+  @test x3 ∧ x3 == x3
+  a = Diagram(3, ⊥, ⊤)
+  b = Diagram(2, ⊥, a)
+  c = Diagram(1, b, a)
+  @test c ∧ c == c
+
+  # Commutative.
+  @test ⊥ ∧ ⊤ == ⊤ ∧ ⊥
+  @test x1 ∧ x2 == x2 ∧ x1
+  @test (x1 ∧ x2) ∧ x3 == x3 ∧ (x1 ∧ x2)
+  @test c ∧ (x2 ∧ ¬x3) == (x2 ∧ ¬x3) ∧ c
+
+  # Associative.
+  @test x1 ∧ (x2 ∧ x3) == (x1 ∧ x2) ∧ x3
+  @test ¬x1 ∧ (x2 ∧ x3) == (¬x1 ∧ x2) ∧ x3
+  @test x1 ∧ (¬x2 ∧ x3) == (x1 ∧ ¬x2) ∧ x3
+  @test x1 ∧ (x2 ∧ ¬x3) == (x1 ∧ x2) ∧ ¬x3
+
+  # Neutral element.
+  @test x1 ∧ ⊤ == x1
+  @test x2 ∧ ⊤ == x2
+  @test x3 ∧ ⊤ == x3
+  @test ¬x1 ∧ ⊤ == ¬x1
+  @test ¬x2 ∧ ⊤ == ¬x2
+  @test ¬x3 ∧ ⊤ == ¬x3
+  @test (x1 ∧ x2 ∧ x3) ∧ ⊤ == x1 ∧ x2 ∧ x3
+  @test (¬x1 ∧ ¬x2 ∧ ¬x3) ∧ ⊤ == ¬x1 ∧ ¬x2 ∧ ¬x3
+  @test c ∧ ⊤ == c
+
+  # Opposite element.
+  @test x1 ∧ ¬x1 == ⊥
+  @test ¬x2 ∧ x2 == ⊥
+  @test ¬x3 ∧ x3 == ⊥
+  @test c ∧ ¬c == ⊥
+  @test ¬(x1 ∧ ¬x3 ∧ x2) ∧ (x1 ∧ ¬x3 ∧ x2) == ⊥
+  @test ¬x1 ∧ ¬¬x1 == ⊥
+  @test ¬(¬x2) ∧ ¬x2 == ⊥
+  @test ¬(¬x3) ∧ ¬x3 == ⊥
+  @test ¬c ∧ ¬¬c == ⊥
+  @test ¬¬(x1 ∧ ¬x3 ∧ x2) ∧ ¬(x1 ∧ ¬x3 ∧ x2) == ⊥
+
+  # Distributive conjunction over disjunction.
+  @test x1 ∧ (x2 ∨ x3) == (x1 ∧ x2) ∨ (x1 ∧ x3)
+  @test c ∧ (x2 ∨ x3) == (c ∧ x2) ∨ (c ∧ x3)
+  @test x1 ∧ (c ∨ x3) == (x1 ∧ c) ∨ (x1 ∧ x3)
+  @test x1 ∧ (x2 ∨ c) == (x1 ∧ x2) ∨ (x1 ∧ c)
+end
+
+@testset "Disjunction" begin
+  # Idempotency.
+  @test ⊤ ∨ ⊤ == ⊤
+  @test ⊥ ∨ ⊥ == ⊥
+  @test x1 ∨ x1 == x1
+  @test x2 ∨ x2 == x2
+  @test x3 ∨ x3 == x3
+  a = Diagram(3, ⊥, ⊤)
+  b = Diagram(2, ⊥, a)
+  c = Diagram(1, b, a)
+  @test c ∨ c == c
+
+  # Commutative.
+  @test ⊥ ∨ ⊤ == ⊤ ∨ ⊥
+  @test x1 ∨ x2 == x2 ∨ x1
+  @test (x1 ∨ x2) ∨ x3 == x3 ∨ (x1 ∨ x2)
+  @test c ∨ (x2 ∨ ¬x3) == (x2 ∨ ¬x3) ∨ c
+
+  # Associative.
+  @test x1 ∨ (x2 ∨ x3) == (x1 ∨ x2) ∨ x3
+  @test ¬x1 ∨ (x2 ∨ x3) == (¬x1 ∨ x2) ∨ x3
+  @test x1 ∨ (¬x2 ∨ x3) == (x1 ∨ ¬x2) ∨ x3
+  @test x1 ∨ (x2 ∨ ¬x3) == (x1 ∨ x2) ∨ ¬x3
+
+  # Neutral element.
+  @test x1 ∨ ⊥ == x1
+  @test x2 ∨ ⊥ == x2
+  @test x3 ∨ ⊥ == x3
+  @test ¬x1 ∨ ⊥ == ¬x1
+  @test ¬x2 ∨ ⊥ == ¬x2
+  @test ¬x3 ∨ ⊥ == ¬x3
+  @test (x1 ∨ x2 ∨ x3) ∨ ⊥ == x1 ∨ x2 ∨ x3
+  @test (¬x1 ∨ ¬x2 ∨ ¬x3) ∨ ⊥ == ¬x1 ∨ ¬x2 ∨ ¬x3
+  @test c ∨ ⊥ == c
+
+  # Opposite element.
+  @test x1 ∨ ¬x1 == ⊤
+  @test ¬x2 ∨ x2 == ⊤
+  @test ¬x3 ∨ x3 == ⊤
+  @test c ∨ ¬c == ⊤
+  @test ¬(x1 ∨ ¬x3 ∨ x2) ∨ (x1 ∨ ¬x3 ∨ x2) == ⊤
+  @test ¬x1 ∨ ¬¬x1 == ⊤
+  @test ¬(¬x2) ∨ ¬x2 == ⊤
+  @test ¬(¬x3) ∨ ¬x3 == ⊤
+  @test ¬c ∨ ¬¬c == ⊤
+  @test ¬¬(x1 ∨ ¬x3 ∨ x2) ∨ ¬(x1 ∨ ¬x3 ∨ x2) == ⊤
+
+  # Distributive disjunction over conjunction.
+  @test x1 ∨ (x2 ∧ x3) == (x1 ∨ x2) ∧ (x1 ∨ x3)
+  @test c ∨ (x2 ∧ x3) == (c ∨ x2) ∧ (c ∨ x3)
+  @test x1 ∨ (c ∧ x3) == (x1 ∨ c) ∧ (x1 ∨ x3)
+  @test x1 ∨ (x2 ∧ c) == (x1 ∨ x2) ∧ (x1 ∨ c)
+end
+
+@testset "XOR" begin
+  # Idempotency.
+  @test ⊤ ⊻ ⊤ == ⊥
+  @test ⊥ ⊻ ⊥ == ⊥
+  @test x1 ⊻ x1 == ⊥
+  @test x2 ⊻ x2 == ⊥
+  @test x3 ⊻ x3 == ⊥
+  a = Diagram(3, ⊥, ⊤)
+  b = Diagram(2, ⊥, a)
+  c = Diagram(1, b, a)
+  @test c ⊻ c == ⊥
+
+  # Commutative.
+  @test ⊥ ⊻ ⊤ == ⊤ ⊻ ⊥
+  @test x1 ⊻ x2 == x2 ⊻ x1
+  @test (x1 ⊻ x2) ⊻ x3 == x3 ⊻ (x1 ⊻ x2)
+  @test c ⊻ (x2 ⊻ ¬x3) == (x2 ⊻ ¬x3) ⊻ c
+
+  # Associative.
+  @test x1 ⊻ (x2 ⊻ x3) == (x1 ⊻ x2) ⊻ x3
+  @test ¬x1 ⊻ (x2 ⊻ x3) == (¬x1 ⊻ x2) ⊻ x3
+  @test x1 ⊻ (¬x2 ⊻ x3) == (x1 ⊻ ¬x2) ⊻ x3
+  @test x1 ⊻ (x2 ⊻ ¬x3) == (x1 ⊻ x2) ⊻ ¬x3
+
+  # Neutral element.
+  @test x1 ⊻ ⊥ == x1
+  @test x2 ⊻ ⊥ == x2
+  @test x3 ⊻ ⊥ == x3
+  @test ¬x1 ⊻ ⊥ == ¬x1
+  @test ¬x2 ⊻ ⊥ == ¬x2
+  @test ¬x3 ⊻ ⊥ == ¬x3
+  @test (x1 ⊻ x2 ⊻ x3) ⊻ ⊥ == x1 ⊻ x2 ⊻ x3
+  @test (¬x1 ⊻ ¬x2 ⊻ ¬x3) ⊻ ⊥ == ¬x1 ⊻ ¬x2 ⊻ ¬x3
+  @test c ⊻ ⊥ == c
+
+  # Opposite element.
+  @test x1 ⊻ ¬x1 == ⊤
+  @test ¬x2 ⊻ x2 == ⊤
+  @test ¬x3 ⊻ x3 == ⊤
+  @test c ⊻ ¬c == ⊤
+  @test ¬(x1 ⊻ ¬x3 ⊻ x2) ⊻ (x1 ⊻ ¬x3 ⊻ x2) == ⊤
+  @test ¬x1 ⊻ ¬¬x1 == ⊤
+  @test ¬(¬x2) ⊻ ¬x2 == ⊤
+  @test ¬(¬x3) ⊻ ¬x3 == ⊤
+  @test ¬c ⊻ ¬¬c == ⊤
+  @test ¬¬(x1 ⊻ ¬x3 ⊻ x2) ⊻ ¬(x1 ⊻ ¬x3 ⊻ x2) == ⊤
 end
