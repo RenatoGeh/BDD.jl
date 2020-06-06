@@ -122,3 +122,4 @@ LICENSE
 -------
 
 See https://github.com/thiagopbueno/pyddlib/ for the original license.
+A copy is added to this repository.
