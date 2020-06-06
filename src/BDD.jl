@@ -122,11 +122,11 @@ let V::Dict{Int, Diagram}, Q::Vector{Diagram}
       V = Dict{Int, Diagram}(α.id => α)
     end
     if isempty(Q) return nothing end
-    v = popfirst!(Q)
+    v = pop!(Q)
     if !is_term(v)
       l, h = v.low, v.high
-      if !haskey(V, l.id) push!(Q, l); V[l.id] = l end
       if !haskey(V, h.id) push!(Q, h); V[h.id] = h end
+      if !haskey(V, l.id) push!(Q, l); V[l.id] = l end
     end
     return v, state+1
   end
@@ -136,11 +136,11 @@ function Base.foreach(f::Function, α::Diagram)
   V = Dict{Int, Diagram}(α.id => α)
   Q = Diagram[α]
   while !isempty(Q)
-    v = popfirst!(Q)
+    v = pop!(Q)
     if !is_term(v)
       l, h = v.low, v.high
-      if !haskey(V, l.id) push!(Q, l); V[l.id] = l end
       if !haskey(V, h.id) push!(Q, h); V[h.id] = h end
+      if !haskey(V, l.id) push!(Q, l); V[l.id] = l end
     end
     f(v)
   end
@@ -151,11 +151,11 @@ function Base.collect(α::Diagram)::Vector{Diagram}
   Q = Diagram[α]
   C = Vector{Diagram}()
   while !isempty(Q)
-    v = popfirst!(Q)
+    v = pop!(Q)
     if !is_term(v)
       l, h = v.low, v.high
-      if !haskey(V, l.id) push!(Q, l); V[l.id] = l end
       if !haskey(V, h.id) push!(Q, h); V[h.id] = h end
+      if !haskey(V, l.id) push!(Q, l); V[l.id] = l end
     end
     push!(C, v)
   end
@@ -163,7 +163,7 @@ end
 
 """Reduce a Diagram rooted at α inplace, removing duplicate nodes and redundant sub-trees. Returns
 canonical representation of α."""
-function reduce!(α::Diagram)::Diagram
+function reduce!(α::Diagram, verbose = false)::Diagram
   if is_term(α) return α end
 
   V = Dict{Int, Vector{Diagram}}()
@@ -183,6 +183,7 @@ function reduce!(α::Diagram)::Diagram
       else push!(Q, ((v.low.id, v.high.id), v)) end
     end
     sort!(Q, by=first)
+    if verbose display(Q); println() end
     local oldk::Tuple{Int, Int} = (-2, -2)
     for (k, v) ∈ Q
       if k == oldk v.id = nid
@@ -228,11 +229,11 @@ function apply_step(α::Diagram, β::Diagram, ⊕, T::Dict{Tuple{Int, Int}, Diag
     m = min(i, j)
 
     local l1::Diagram, h1::Diagram
-    if i == m l1, h1 = α.low, α.high
+    if α.index == m l1, h1 = α.low, α.high
     else l1 = h1 = α end
 
     local l2::Diagram, h2::Diagram
-    if j == m l2, h2 = β.low, β.high
+    if β.index == m l2, h2 = β.low, β.high
     else l2 = h2 = β end
 
     l = apply_step(l1, l2, ⊕, T)
