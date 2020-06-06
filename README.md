@@ -17,7 +17,7 @@ design automation conference, pp. 40-45. ACM, 1991.
 Install
 -------
 
-It is required to have Python3 installed.
+It is required to have Julia installed.
 
 ```bash
   $ julia -e 'using Pkg; Pkg.add("https://github.com/RenatoGeh/BDD.jl")'
@@ -38,7 +38,7 @@ functions with logical operations AND (∧), OR (∨), XOR (⊻) and
 negation (¬).
 
 ```julia
-  import BDD: ⊤, ⊥, variable
+  import BDD: ⊤, ⊥, variable, ∧, ∨, ⊻, ¬, |
   # For preserving namespace, use 'using BDD' instead.
 
   println("== True ==")
