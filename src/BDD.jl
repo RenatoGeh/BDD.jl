@@ -163,7 +163,7 @@ end
 
 """Reduce a Diagram rooted at α inplace, removing duplicate nodes and redundant sub-trees. Returns
 canonical representation of α."""
-function reduce!(α::Diagram, verbose = false)::Diagram
+function reduce!(α::Diagram)::Diagram
   if is_term(α) return α end
 
   V = Dict{Int, Vector{Diagram}}()
@@ -183,7 +183,6 @@ function reduce!(α::Diagram, verbose = false)::Diagram
       else push!(Q, ((v.low.id, v.high.id), v)) end
     end
     sort!(Q, by=first)
-    if verbose display(Q); println() end
     local oldk::Tuple{Int, Int} = (-2, -2)
     for (k, v) ∈ Q
       if k == oldk v.id = nid
@@ -204,7 +203,12 @@ end
 export reduce!
 
 function Base.copy(α::Diagram)::Diagram
-  if is_term(α) return is_⊤(δ) ? ⊤ : ⊥ end
+  if is_term(α) return is_⊤(α) ? Diagram(true) : Diagram(false) end
+  return Diagram(α.index, α.low, α.high)
+end
+
+function Base.deepcopy(α::Diagram)::Diagram
+  if is_term(α) return is_⊤(α) ? Diagram(true) : Diagram(false) end
   return Diagram(α.index, copy(α.low), copy(α.high))
 end
 
@@ -250,10 +254,12 @@ end
 export restrict
 "Returns a new reduced Diagram restricted to instantiation X."
 @inline Base.:|(α::Diagram, X::Dict{Int, Bool})::Diagram = restrict(α, X)
+@inline Base.:|(α::Diagram, X::Vector{Int})::Diagram = restrict(α, Dict{Int, Bool}((x -> x > 0 ? x => true : -x => false).(X)))
+@inline Base.:|(α::Diagram, x::Int)::Diagram = restrict(α, Dict{Int, Bool}(x > 0 ? x => true : -x => false))
 
 "Returns a new Diagram restricted to instantiation X."
 function restrict_step(α::Diagram, X::Dict{Int, Bool})::Diagram
-  if is_term(α) return α end
+  if is_term(α) return copy(α) end
   x = α.index
   if !haskey(X, x)
     l = restrict_step(α.low, X)
