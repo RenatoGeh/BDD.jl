@@ -91,7 +91,7 @@ terminal(v::Bool)::Diagram = Diagram(v)
 export terminal
 
 "Returns a Diagram representing a single variable. If negative, negate variable."
-variable(i::Int)::Diagram = i > 0 ? Diagram(i, ⊥, ⊤) : Diagram(i, ⊤, ⊥)
+variable(i::Int)::Diagram = i > 0 ? Diagram(i, ⊥, ⊤) : Diagram(-i, ⊤, ⊥)
 export variable
 
 "Return string representation of Diagram α."
@@ -271,11 +271,66 @@ end
 
 "Compute all possible valuations of scope V."
 @inline valuations(V::Union{Set{Int}, Vector{Int}, UnitRange{Int}}) = Permutations(collect(V), 2^length(V))
+export valuations
 function Base.iterate(P::Permutations, state=0)::Union{Nothing, Tuple{Dict{Int, Bool}, Int}}
   s = state + 1
   if state == 0 return Dict{Int, Bool}(broadcast(x -> abs(x) => false, P.V)), s end
   if state >= P.m return nothing end
-  return Dict{Int, Bool}((i -> i => (state >> (i-1)) & 1 == 1).(1:length(P.V))), s
+  return Dict{Int, Bool}((i -> P.V[i] => (state >> (i-1)) & 1 == 1).(1:length(P.V))), s
+end
+
+struct ConjoinedPermutations
+  V::Vector{Int}
+  m::Int
+end
+
+"Computes all possible valuations of scope V as conjunctions."
+@inline conjunctions(V::Union{Set{Int}, Vector{Int}, UnitRange{Int}}) = ConjoinedPermutations(collect(V), 2^length(V))
+export conjunctions
+function Base.iterate(P::ConjoinedPermutations, state=0)::Union{Nothing, Tuple{Diagram, Int}}
+  s = state + 1
+  if state >= P.m return nothing end
+  local V::Vector{Int}
+  if state == 0 V = broadcast(-, P.V)
+  else V = (i -> (state >> (i-1)) & 1 == 1 ? P.V[i] : -P.V[i]).(1:length(P.V)) end
+  local α::Diagram
+  first = true
+  for v ∈ Iterators.reverse(V)
+    if first
+      α = variable(v)
+      first = false
+    else
+      α = v > 0 ? Diagram(v, ⊥, α) : Diagram(-v, α, ⊥)
+    end
+  end
+  return α, s
+end
+
+struct ConvalPermutations
+  V::Vector{Int}
+  m::Int
+end
+
+"Computes all possible valuations of scope V as both conjunctions and instantiation values."
+@inline convals(V::Union{Set{Int}, Vector{Int}, UnitRange{Int}}) = ConvalPermutations(collect(V), 2^length(V))
+export convals
+function Base.iterate(P::ConvalPermutations, state=0)::Union{Nothing, Tuple{Tuple{Diagram, Dict{Int, Bool}}, Int}}
+  s = state + 1
+  if state >= P.m return nothing end
+  local V::Vector{Int}
+  if state == 0 V = broadcast(-, P.V)
+  else V = (i -> (state >> (i-1)) & 1 == 1 ? P.V[i] : -P.V[i]).(1:length(P.V)) end
+  local α::Diagram
+  first = true
+  for v ∈ Iterators.reverse(V)
+    if first
+      α = variable(v)
+      first = false
+    else
+      α = v > 0 ? Diagram(v, ⊥, α) : Diagram(-v, α, ⊥)
+    end
+  end
+  return (α, Dict{Int, Bool}((i -> i > 0 ? i => true : -i => false).(V))), s
 end
 
 "Performs Shannon's Decomposition on the Diagram α, given a variable to isolate."
@@ -286,38 +341,22 @@ end
 "Performs Shannon's Decomposition on the Diagram α, given a set of variables to isolate."
 function shannon(α::Diagram, V::Union{Set{Int}, Vector{Int}})::Vector{Tuple{Diagram, Diagram}}
   Δ = Vector{Tuple{Diagram, Diagram}}()
-  for X ∈ valuations(V)
-    local f = true
-    local ⋀::Diagram
-    for (v, x) ∈ X
-      β = variable(x ? v : -v)
-      if f ⋀ = β; f = false
-      else ⋀ = ⋀ ∧ β end
-    end
-    push!(Δ, (⋀, α|X))
-  end
+  for (β, X) ∈ convals(V) push!(Δ, (β, α|X)) end
   return Δ
 end
-export shannon
 
 """Performs Shannon's Decomposition on the Diagram α, given a set of variables to isolate. Any
 decomposition that results in a ⊥ is discarded."""
 function shannon!(α::Diagram, V::Union{Set{Int}, Vector{Int}})::Vector{Tuple{Diagram, Diagram}}
   Δ = Vector{Tuple{Diagram, Diagram}}()
-  for X ∈ valuations(V)
-    ϕ = a|X
+  for (β, X) ∈ convals(V)
+    ϕ = α|X
     if is_⊥(ϕ) continue end
-    local f = true
-    local ⋀::Diagram
-    for (v, x) ∈ X
-      β = variable(x ? v : -v)
-      if f ⋀ = β; f = false
-      else ⋀ = ⋀ ∧ β end
-    end
-    push!(Δ, (⋀, ϕ))
+    push!(Δ, (β, ϕ))
   end
   return Δ
 end
-export shannon!
+
+export shannon, shannon!
 
 end # module
