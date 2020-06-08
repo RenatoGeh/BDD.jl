@@ -2,7 +2,7 @@ using Test
 using Random
 
 import BDD: variable, is_⊤, is_⊥, is_term, is_var, ⊤, ⊥, reduce!, Diagram, |, restrict, ¬, ∧, ∨,
-            valuations, conjunctions, convals
+            valuations, conjunctions, convals, shannon, shannon!
 
 x1, x2, x3 = variable(1), variable(2), variable(3)
 X = Diagram[x1, x2, x3]
@@ -341,4 +341,14 @@ end
 
 @testset "Shannon decomposition" begin
   ϕ = x1 ∧ x2 ∨ x3
+
+  E = Tuple{Diagram, Diagram, Diagram, Diagram}[(x1, x2 ∨ x3, ¬x1, x3), (x2, x1 ∨ x3, ¬x2, x3),
+                                                (x3, ⊤, ¬x3, x1 ∧ x2)]
+  for (i, e) ∈ enumerate(E)
+    v, α, u, β = shannon(ϕ, i)
+    @test v == e[1]
+    @test α == e[2]
+    @test u == e[3]
+    @test β == e[4]
+  end
 end
