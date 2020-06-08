@@ -1,10 +1,55 @@
 using Test
+using Random
 
 import BDD: variable, is_⊤, is_⊥, is_term, is_var, ⊤, ⊥, reduce!, Diagram, |, restrict, ¬, ∧, ∨,
-            valuations
+            valuations, conjunctions, convals
 
 x1, x2, x3 = variable(1), variable(2), variable(3)
 X = Diagram[x1, x2, x3]
+
+@testset "Valuations" begin
+  Random.seed!(101)
+  for i ∈ 1:50
+    Sc = Random.randsubseq(collect(1:10), 0.5)
+    n = length(Sc)
+    local p::Int64 = 0
+    for (j, x) ∈ enumerate(valuations(Sc))
+      @test Set{Int}(keys(x)) == Set{Int}(Sc)
+      z = count_zeros(p) - 64 + n
+      @test count(y -> y.second, x) == n - z
+      @test count(y -> !y.second, x) == z
+      p += 1
+    end
+  end
+end
+
+@testset "Conjunctions" begin
+  y1, y2, y3 = variable(1), variable(2), variable(3)
+  Sc = Int[1, 2, 3]
+  E = Diagram[¬y1 ∧ ¬y2 ∧ ¬y3, y1 ∧ ¬y2 ∧ ¬y3, ¬y1 ∧ y2 ∧ ¬y3, y1 ∧ y2 ∧ ¬y3, ¬y1 ∧ ¬y2 ∧ y3,
+              y1 ∧ ¬y2 ∧ y3, ¬y1 ∧ y2 ∧ y3, y1 ∧ y2 ∧ y3]
+  for (i, α) ∈ enumerate(conjunctions(Sc))
+    @test α == E[i]
+    for x ∈ valuations(Sc) @test α|x == E[i]|x end
+  end
+end
+
+@testset "Convals" begin
+  y1, y2, y3 = variable(1), variable(2), variable(3)
+  Sc = Int[1, 2, 3]
+  E = Diagram[¬y1 ∧ ¬y2 ∧ ¬y3, y1 ∧ ¬y2 ∧ ¬y3, ¬y1 ∧ y2 ∧ ¬y3, y1 ∧ y2 ∧ ¬y3, ¬y1 ∧ ¬y2 ∧ y3,
+              y1 ∧ ¬y2 ∧ y3, ¬y1 ∧ y2 ∧ y3, y1 ∧ y2 ∧ y3]
+  for (i, P) ∈ enumerate(convals(Sc))
+    α, x = P
+    @test α == E[i]
+    for y ∈ valuations(Sc) @test α|y == E[i]|y end
+    n = length(Sc)
+    z = count_zeros(i-1) - 64 + n
+    @test Set{Int}(keys(x)) == Set{Int}(Sc)
+    @test count(y -> y.second, x) == n - z
+    @test count(y -> !y.second, x) == z
+  end
+end
 
 @testset "Terminal ⊤" begin
   @test is_⊤(⊤)
@@ -292,4 +337,8 @@ end
   @test ¬(¬x3) ⊻ ¬x3 == ⊤
   @test ¬c ⊻ ¬¬c == ⊤
   @test ¬¬(x1 ⊻ ¬x3 ⊻ x2) ⊻ ¬(x1 ⊻ ¬x3 ⊻ x2) == ⊤
+end
+
+@testset "Shannon decomposition" begin
+  ϕ = x1 ∧ x2 ∨ x3
 end
