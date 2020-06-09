@@ -159,6 +159,7 @@ function Base.collect(α::Diagram)::Vector{Diagram}
     end
     push!(C, v)
   end
+  return C
 end
 
 """Reduce a Diagram rooted at α inplace, removing duplicate nodes and redundant sub-trees. Returns
