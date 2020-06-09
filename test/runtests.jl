@@ -340,15 +340,31 @@ end
 end
 
 @testset "Shannon decomposition" begin
-  ϕ = x1 ∧ x2 ∨ x3
-
-  E = Tuple{Diagram, Diagram, Diagram, Diagram}[(x1, x2 ∨ x3, ¬x1, x3), (x2, x1 ∨ x3, ¬x2, x3),
-                                                (x3, ⊤, ¬x3, x1 ∧ x2)]
-  for (i, e) ∈ enumerate(E)
-    v, α, u, β = shannon(ϕ, i)
-    @test v == e[1]
-    @test α == e[2]
-    @test u == e[3]
-    @test β == e[4]
+  function test_formula(ϕ::Diagram, E::Vector{Tuple{Diagram, Diagram, Diagram, Diagram}})
+    for (i, e) ∈ enumerate(E)
+      u, α, v, β = shannon(ϕ, i)
+      @test u == e[1]
+      @test α == e[2]
+      @test v == e[3]
+      @test β == e[4]
+    end
   end
+
+  test_formula(x1 ∧ x2 ∨ x3, [(x1, x2 ∨ x3, ¬x1, x3), (x2, x1 ∨ x3, ¬x2, x3), (x3, ⊤, ¬x3, x1 ∧ x2)])
+  test_formula((x1 ∧ x2) ∨ (¬x2 ∧ ¬x3), [(x1, x2 ∨ ¬x3, ¬x1, ¬x2 ∧ ¬x3), (x2, x1, ¬x2, ¬x3), (x3, x1 ∧ x2, ¬x3, x1 ∨ ¬x2)])
+
+  ϕ = (x1 ∧ x2) ∨ (x2 ∧ ¬x3 ∧ ¬x1)
+  E = [⊥, ⊥, ¬x3, ⊤]
+  D = shannon(ϕ, [1, 2])
+  for (i, x) ∈ enumerate(conjunctions([1, 2]))
+    @test D[i][1] == x
+    @test D[i][2] == E[i]
+  end
+
+  D = shannon!(ϕ, [1, 2])
+  @test length(D) == 2
+  @test D[1][1] == ¬x1 ∧ x2
+  @test D[1][2] == ¬x3
+  @test D[2][1] == x1 ∧ x2
+  @test D[2][2] == ⊤
 end
