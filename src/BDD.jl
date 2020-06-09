@@ -115,7 +115,9 @@ export terminal
 export variable
 
 "Returns 0 if x is not a literal; else returns the literal's sign."
-@inline sign(x::Diagram) = !is_lit(x) ? 0 : x.low == ⊥ ? 1 : -1
+@inline Base.sign(x::Diagram) = !is_lit(x) ? 0 : x.low == ⊥ ? 1 : -1
+"Returns 0 if x is not a literal; else returns an integer representation of x."
+@inline to_int(x::Diagram) = !is_lit(x) ? 0 : x.low == ⊥ ? x.index : -x.index
 
 "Return string representation of Diagram α."
 function Base.string(α::Diagram)::String

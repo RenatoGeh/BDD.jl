@@ -2,7 +2,8 @@ using Test
 using Random
 
 import BDD: variable, is_⊤, is_⊥, is_term, is_var, ⊤, ⊥, reduce!, Diagram, |, restrict, ¬, ∧, ∨,
-            valuations, conjunctions, convals, shannon, shannon!, or, and, terminal, is_lit, sign
+            valuations, conjunctions, convals, shannon, shannon!, or, and, terminal, is_lit, sign,
+            to_int
 
 x1, x2, x3 = variable(1), variable(2), variable(3)
 X = Diagram[x1, x2, x3]
@@ -64,6 +65,7 @@ end
   @test terminal(false) == ¬⊤
   @test !is_lit(⊤)
   @test sign(⊤) == 0
+  @test to_int(⊤) == 0
 end
 
 @testset "Terminal ⊥" begin
@@ -79,6 +81,7 @@ end
   @test terminal(true) == ¬⊥
   @test !is_lit(⊥)
   @test sign(⊥) == 0
+  @test to_int(⊥) == 0
 end
 
 @testset "Variable" begin
@@ -100,6 +103,8 @@ end
     @test ¬v == ¬¬¬i
     @test sign(v) == 1
     @test sign(¬v) == -1
+    @test to_int(v) == i
+    @test to_int(¬v) == -i
   end
 end
 
