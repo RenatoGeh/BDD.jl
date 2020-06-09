@@ -54,6 +54,8 @@ export is_⊥
 @inline is_var(α::Diagram)::Bool = (isdefined(α, :low) && is_⊥(α.low)) && (isdefined(α, :high) && is_⊤(α.high))
 "Returns whether the given Diagram node represents a literal."
 @inline is_lit(α::Diagram)::Bool = isdefined(α, :low) && isdefined(α, :high) && is_term(α.low) && is_term(α.high)
+"Returns whether the given Diagram node is an atomic formula (i.e. a variable, ⊥, ⊤, or literal)."
+@inline is_atom(α::Diagram)::Bool = is_term(α) || is_lit(α)
 export is_var, is_lit
 
 "Negates this boolean function."

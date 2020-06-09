@@ -3,7 +3,7 @@ using Random
 
 import BDD: variable, is_⊤, is_⊥, is_term, is_var, ⊤, ⊥, reduce!, Diagram, |, restrict, ¬, ∧, ∨,
             valuations, conjunctions, convals, shannon, shannon!, or, and, terminal, is_lit, sign,
-            to_int
+            to_int, is_atom
 
 x1, x2, x3 = variable(1), variable(2), variable(3)
 X = Diagram[x1, x2, x3]
@@ -66,6 +66,7 @@ end
   @test !is_lit(⊤)
   @test sign(⊤) == 0
   @test to_int(⊤) == 0
+  @test is_atom(⊤)
 end
 
 @testset "Terminal ⊥" begin
@@ -82,6 +83,7 @@ end
   @test !is_lit(⊥)
   @test sign(⊥) == 0
   @test to_int(⊥) == 0
+  @test is_atom(⊥)
 end
 
 @testset "Variable" begin
@@ -105,6 +107,8 @@ end
     @test sign(¬v) == -1
     @test to_int(v) == i
     @test to_int(¬v) == -i
+    @test is_atom(v)
+    @test is_atom(¬v)
   end
 end
 
@@ -292,6 +296,9 @@ end
   @test 1 ∧ (2 ∧ 3) == and(1, and(2, 3))
   @test (2 ∧ 3) ∧ 1 == and(and(2, 3), 1)
   @test 3 ∧ 2 ∧ 1 == and(and(3, 2), 1)
+
+  @test !is_atom(x1 ∧ x3)
+  @test !is_atom(x1 ∧ x2 ∨ x3)
 end
 
 @testset "Disjunction" begin
@@ -360,6 +367,9 @@ end
   @test 1 ∨ (2 ∨ 3) == or(1, or(2, 3))
   @test (2 ∨ 3) ∨ 1 == or(or(2, 3), 1)
   @test 3 ∨ 2 ∨ 1 == or(or(3, 2), 1)
+
+  @test !is_atom(x1 ∨ ¬x3)
+  @test !is_atom(x2 ∨ x3 ∧ x1)
 end
 
 @testset "XOR" begin
