@@ -1,6 +1,3 @@
-# Port of the pyddlib.
-# See https://github.com/thiagopbueno/pyddlib/.
-
 module BDD
 
 nextid = 1
@@ -60,31 +57,53 @@ export is_var
 
 "Negates this boolean function."
 @inline (¬)(α::Diagram)::Diagram = is_⊤(α) ? ⊥ : is_⊥(α) ? ⊤ : Diagram(α.index, ¬α.low, ¬α.high)
+@inline (¬)(x::Int)::Diagram = x > 0 ? Diagram(x, ⊤, ⊥) : x < 0 ? Diagram(-x, ⊥, ⊤) : ⊥
 export ¬
 
 "Returns a conjunction over the given boolean functions."
 @inline (∧)(α::Diagram, β::Diagram)::Diagram = apply(α, β, &)
+@inline (∧)(x::Int, β::Diagram)::Diagram = apply(variable(x), β, &)
+@inline (∧)(α::Diagram, x::Int)::Diagram = apply(α, variable(x), &)
+@inline (∧)(x::Int, y::Int)::Diagram = apply(variable(x), variable(y), &)
 export ∧
 "Returns a conjunction over the given boolean functions."
 @inline and(α::Diagram, β::Diagram)::Diagram = α ∧ β
+@inline and(x::Int, β::Diagram)::Diagram = x ∧ β
+@inline and(α::Diagram, x::Int)::Diagram = α ∧ x
+@inline and(x::Int, y::Int)::Diagram = x ∧ y
 export and
 
 "Returns a disjunction over the given boolean functions."
 @inline (∨)(α::Diagram, β::Diagram)::Diagram = apply(α, β, |)
+@inline (∨)(x::Int, β::Diagram)::Diagram = apply(variable(x), β, |)
+@inline (∨)(α::Diagram, x::Int)::Diagram = apply(α, variable(x), |)
+@inline (∨)(x::Int, y::Int)::Diagram = apply(variable(x), variable(y), |)
 export ∨
 "Returns a disjunction over the given boolean functions."
 @inline or(α::Diagram, β::Diagram)::Diagram = α ∨ β
+@inline or(x::Int, β::Diagram)::Diagram = x ∨ β
+@inline or(α::Diagram, x::Int)::Diagram = α ∨ x
+@inline or(x::Int, y::Int)::Diagram = x ∨ y
 export or
 
 "Returns a xor of the given boolean functions."
 @inline Base.:⊻(α::Diagram, β::Diagram)::Diagram = apply(α, β, ⊻)
+@inline Base.:⊻(x::Int, β::Diagram)::Diagram = apply(variable(x), β, ⊻)
+@inline Base.:⊻(α::Diagram, x::Int)::Diagram = apply(α, variable(x), ⊻)
+@inline Base.:⊻(x::Int, y::Int)::Diagram = apply(variable(x), variable(y), ⊻)
 
 "Returns whether the two given boolean functions are equivalent."
 @inline Base.:(==)(α::Diagram, β::Diagram)::Bool = is_⊤(apply(α, β, ==))
+@inline Base.:(==)(x::Int, β::Diagram)::Bool = is_var(β) && β.index == x && ((x > 0 && β.low == ⊥ && β.high == ⊤) || (x < 0 && β.low == ⊤ && β.high == ⊥))
+@inline Base.:(==)(α::Diagram, y::Int)::Bool = y == α
 @inline Base.isequal(α::Diagram, β::Diagram)::Bool = α == β
+@inline Base.isequal(x::Int, β::Diagram)::Bool = x == β
+@inline Base.isequal(α::Diagram, y::Int)::Bool = y == α
 
 "Returns whether the two given boolean functions are not equivalent."
 @inline Base.:(!=)(α::Diagram, β::Diagram)::Bool = !(α == β)
+@inline Base.:(!=)(x::Int, β::Diagram)::Bool = !(x == β)
+@inline Base.:(!=)(α::Diagram, y::Int)::Bool = !(y == α)
 
 "Returns a new terminal node of given boolean value."
 terminal(v::Bool)::Diagram = Diagram(v)

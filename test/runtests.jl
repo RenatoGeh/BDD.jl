@@ -86,6 +86,10 @@ end
     @test v.index == i
     @test v.high.value
     @test !v.low.value
+    @test v == i
+    @test ¬v == ¬i
+    @test v == ¬¬i
+    @test ¬v == ¬¬¬i
   end
 end
 
@@ -263,6 +267,16 @@ end
   @test x1 ∧ (x2 ∧ x3) == and(x1, and(x2, x3))
   @test (x2 ∧ x3) ∧ x1 == and(and(x2, x3), x1)
   @test x3 ∧ x2 ∧ x1 == and(and(x3, x2), x1)
+
+  @test 1 ∧ ¬2 == x1 ∧ ¬x2
+  @test ¬(3 ∧ 2) == ¬(x3 ∧ x2)
+  @test 1 ∧ ¬2 ∧ 3 == x1 ∧ ¬x2 ∧ x3
+  @test ¬(1 ∧ (2 ∧ ¬3)) == ¬(x1 ∧ (x2 ∧ ¬x3))
+  @test 1 ∧ (2 ∨ 3) ∧ (¬3 ∨ ¬1) == x1 ∧ (x2 ∨ x3) ∧ (¬x3 ∨ ¬x1)
+
+  @test 1 ∧ (2 ∧ 3) == and(1, and(2, 3))
+  @test (2 ∧ 3) ∧ 1 == and(and(2, 3), 1)
+  @test 3 ∧ 2 ∧ 1 == and(and(3, 2), 1)
 end
 
 @testset "Disjunction" begin
@@ -321,6 +335,16 @@ end
   @test x1 ∨ (x2 ∨ x3) == or(x1, or(x2, x3))
   @test (x2 ∨ x3) ∨ x1 == or(or(x2, x3), x1)
   @test x3 ∨ x2 ∨ x1 == or(or(x3, x2), x1)
+
+  @test 1 ∨ ¬2 == x1 ∨ ¬x2
+  @test ¬(3 ∨ 2) == ¬(x3 ∨ x2)
+  @test 1 ∨ ¬2 ∨ 3 == x1 ∨ ¬x2 ∨ x3
+  @test ¬(1 ∨ (2 ∨ ¬3)) == ¬(x1 ∨ (x2 ∨ ¬x3))
+  @test 1 ∨ (2 ∧ 3) ∨ (¬3 ∧ ¬1) == x1 ∨ (x2 ∧ x3) ∨ (¬x3 ∧ ¬x1)
+
+  @test 1 ∨ (2 ∨ 3) == or(1, or(2, 3))
+  @test (2 ∨ 3) ∨ 1 == or(or(2, 3), 1)
+  @test 3 ∨ 2 ∨ 1 == or(or(3, 2), 1)
 end
 
 @testset "XOR" begin
@@ -369,6 +393,11 @@ end
   @test ¬(¬x3) ⊻ ¬x3 == ⊤
   @test ¬c ⊻ ¬¬c == ⊤
   @test ¬¬(x1 ⊻ ¬x3 ⊻ x2) ⊻ ¬(x1 ⊻ ¬x3 ⊻ x2) == ⊤
+
+  @test 1 ⊻ ¬3 == x1 ⊻ ¬x3
+  @test ¬(¬2 ⊻ 1) == ¬(¬x2 ⊻ x1)
+  @test ¬(1 ⊻ ¬3 ⊻ 2) == ¬(x1 ⊻ ¬x3 ⊻ x2)
+  @test ¬(1 ⊻ (¬2 ∨ 3) ⊻ ¬(3 ∧ 2)) ∧ (3 ∧ ¬2) == ¬(x1 ⊻ (¬x2 ∨ x3) ⊻ ¬(x3 ∧ x2)) ∧ (x3 ∧ ¬x2)
 end
 
 @testset "Equality and inequality" begin
@@ -387,6 +416,10 @@ end
   @test isequal(ϕ, ⊥) == (ϕ == ⊥)
   @test !isequal(ϕ, ϕ) == (ϕ != ϕ)
   @test !isequal(ϕ, ⊥) == (ϕ != ⊥)
+
+  @test !isequal(ϕ, 2) == (ϕ != 2)
+  @test !isequal(ϕ, ¬2) == (ϕ != ¬2)
+  @test isequal(ϕ, ¬(1 ∨ (2 ∧ 3)) ∨ ((3 ∧ 1) ∨ 2))
 end
 
 @testset "Iterators" begin
