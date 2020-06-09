@@ -2,7 +2,7 @@ using Test
 using Random
 
 import BDD: variable, is_⊤, is_⊥, is_term, is_var, ⊤, ⊥, reduce!, Diagram, |, restrict, ¬, ∧, ∨,
-            valuations, conjunctions, convals, shannon, shannon!
+            valuations, conjunctions, convals, shannon, shannon!, or, and, terminal
 
 x1, x2, x3 = variable(1), variable(2), variable(3)
 X = Diagram[x1, x2, x3]
@@ -60,6 +60,8 @@ end
   @test !isdefined(⊤, :low)
   @test ⊤.value
   @test ⊤.index == -1
+  @test terminal(true) == ⊤
+  @test terminal(false) == ¬⊤
 end
 
 @testset "Terminal ⊥" begin
@@ -71,6 +73,8 @@ end
   @test !isdefined(⊥, :low)
   @test !⊥.value
   @test ⊥.index == -1
+  @test terminal(false) == ⊥
+  @test terminal(true) == ¬⊥
 end
 
 @testset "Variable" begin
@@ -155,6 +159,26 @@ end
   f3 = ¬x2 ∨ x3
   E = Diagram[⊤, ⊤, ⊥, ⊥, ⊤, ⊤, ⊤, ⊤, ⊤, ⊤, ⊥, ⊥, ⊤, ⊤, ⊤, ⊤]
   for (i, y) ∈ enumerate(valuations(1:4)) f3|y == E[i] end
+
+  f4 = x1 ∨ ¬x2
+  @test f4|1 == ⊤
+  @test f4|-1 == ¬x2
+  @test f4|2 == x1
+  @test f4|-2 == ⊤
+  @test f4|[1, 2] == ⊤
+  @test f4|[-1, 2] == ⊥
+  @test f4|[1, -2] == ⊤
+  @test f4|[-1, -2] == ⊤
+
+  f5 = ¬x1 ∧ x2
+  @test f5|1 == ⊥
+  @test f5|-1 == x2
+  @test f5|2 == ¬x1
+  @test f5|-2 == ⊥
+  @test f5|[1, 2] == ⊥
+  @test f5|[-1, 2] == ⊤
+  @test f5|[1, -2] == ⊥
+  @test f5|[-1, -2] == ⊥
 end
 
 @testset "Negate" begin
@@ -235,6 +259,10 @@ end
   @test c ∧ (x2 ∨ x3) == (c ∧ x2) ∨ (c ∧ x3)
   @test x1 ∧ (c ∨ x3) == (x1 ∧ c) ∨ (x1 ∧ x3)
   @test x1 ∧ (x2 ∨ c) == (x1 ∧ x2) ∨ (x1 ∧ c)
+
+  @test x1 ∧ (x2 ∧ x3) == and(x1, and(x2, x3))
+  @test (x2 ∧ x3) ∧ x1 == and(and(x2, x3), x1)
+  @test x3 ∧ x2 ∧ x1 == and(and(x3, x2), x1)
 end
 
 @testset "Disjunction" begin
@@ -289,6 +317,10 @@ end
   @test c ∨ (x2 ∧ x3) == (c ∨ x2) ∧ (c ∨ x3)
   @test x1 ∨ (c ∧ x3) == (x1 ∨ c) ∧ (x1 ∨ x3)
   @test x1 ∨ (x2 ∧ c) == (x1 ∨ x2) ∧ (x1 ∨ c)
+
+  @test x1 ∨ (x2 ∨ x3) == or(x1, or(x2, x3))
+  @test (x2 ∨ x3) ∨ x1 == or(or(x2, x3), x1)
+  @test x3 ∨ x2 ∨ x1 == or(or(x3, x2), x1)
 end
 
 @testset "XOR" begin
@@ -339,6 +371,45 @@ end
   @test ¬¬(x1 ⊻ ¬x3 ⊻ x2) ⊻ ¬(x1 ⊻ ¬x3 ⊻ x2) == ⊤
 end
 
+@testset "Equality and inequality" begin
+  @test isequal(⊥, ⊥)
+  @test isequal(⊤, ⊤)
+  @test !isequal(⊥, ⊤)
+  @test !isequal(⊤, ⊥)
+
+  @test !isequal(⊥, ⊥) == (⊥ != ⊥)
+  @test !isequal(⊤, ⊤) == (⊤ != ⊤)
+  @test !isequal(⊥, ⊤) == (⊥ != ⊤)
+  @test !isequal(⊤, ⊥) == (⊤ != ⊥)
+
+  ϕ = ¬(x1 ∨ (x2 ∧ x3)) ∨ ((x3 ∧ x1) ∨ x2)
+  @test isequal(ϕ, ϕ) == (ϕ == ϕ)
+  @test isequal(ϕ, ⊥) == (ϕ == ⊥)
+  @test !isequal(ϕ, ϕ) == (ϕ != ϕ)
+  @test !isequal(ϕ, ⊥) == (ϕ != ⊥)
+end
+
+@testset "Iterators" begin
+  Φ = Diagram[¬(x1 ∨ (x2 ∧ x3)) ∨ ((x3 ∧ x1) ∨ x2), x1 ∧ x2 ∨ x3, (x1 ∧ x2) ∨ (¬x2 ∧ ¬x3),
+              (x1 ∧ x2) ∨ (x2 ∧ ¬x3 ∧ ¬x1)]
+  for ϕ ∈ Φ
+    U, V, W = Vector{Diagram}(), Vector{Diagram}(), Vector{Diagram}()
+    for v ∈ ϕ push!(V, v) end
+    foreach(x -> push!(U, x), ϕ)
+    W = collect(ϕ)
+    @test U == V
+    @test V == W
+    # Transitive, therefore expect U == W if both conditions satisfy.
+    @test U == W
+  end
+end
+
+@testset "Hash function" begin
+  test_hash(ϕ::Diagram) = foreach((x -> @test hash(x) == hash(x.id)), ϕ)
+  test_hash.([¬(x1 ∨ (x2 ∧ x3)) ∨ ((x3 ∧ x1) ∨ x2), x1 ∧ x2 ∨ x3, (x1 ∧ x2) ∨ (¬x2 ∧ ¬x3),
+              (x1 ∧ x2) ∨ (x2 ∧ ¬x3 ∧ ¬x1)])
+end
+
 @testset "Shannon decomposition" begin
   function test_formula(ϕ::Diagram, E::Vector{Tuple{Diagram, Diagram, Diagram, Diagram}})
     for (i, e) ∈ enumerate(E)
@@ -367,4 +438,41 @@ end
   @test D[1][2] == ¬x3
   @test D[2][1] == x1 ∧ x2
   @test D[2][2] == ⊤
+end
+
+@testset "Copy and deep copy" begin
+  @test x1 == copy(x1)
+  @test x2 == copy(x2)
+  @test x3 == copy(x3)
+  @test ⊤ == copy(⊤)
+  @test ⊥ == copy(⊥)
+  @test ¬x1 == ¬copy(x1)
+  @test ¬x2 == ¬copy(x2)
+  @test ¬x3 == ¬copy(x3)
+
+  Φ = Diagram[¬(x1 ∨ (x2 ∧ x3)) ∨ ((x3 ∧ x1) ∨ x2), x1 ∧ x2 ∨ x3, (x1 ∧ x2) ∨ (¬x2 ∧ ¬x3),
+              (x1 ∧ x2) ∨ (x2 ∧ ¬x3 ∧ ¬x1)]
+  for ϕ ∈ Φ
+    @test ϕ == deepcopy(ϕ)
+  end
+end
+
+@testset "String representation" begin
+  @test string(⊤) == "@ (value=true, id=$(⊤.id))\n"
+  @test string(⊥) == "@ (value=false, id=$(⊥.id))\n"
+  for x ∈ X
+    @test string(x) == "@ (index=$(x.index), id=$(x.id))\n|  - (value=false, id=$(x.low.id))\n|  + (value=true, id=$(x.high.id))\n"
+  end
+
+  ϕ = x1 ∧ x2 ∨ x3
+  @test string(x1 ∧ x2 ∨ x3) === """@ (index=$(x1.index), id=$(ϕ.id))
+|  - (index=$(x3.index), id=$(ϕ.low.id))
+|  |  - (value=$(x3.low.value), id=$(ϕ.low.low.id))
+|  |  + (value=$(x3.high.value), id=$(ϕ.high.high.id))
+|  + (index=$(x2.index), id=$(ϕ.high.id))
+|  |  - (index=$(x3.index), id=$(ϕ.low.id))
+|  |  |  - (value=$(x3.low.value), id=$(ϕ.high.low.low.id))
+|  |  |  + (value=$(x3.high.value), id=$(ϕ.high.low.high.id))
+|  |  + (value=$(x2.high.value), id=$(ϕ.high.high.id))
+"""
 end
