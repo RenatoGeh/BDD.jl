@@ -1,3 +1,6 @@
+[![Build Status](https://travis-ci.com/RenatoGeh/BDD.jl.svg?branch=master)](https://travis-ci.com/RenatoGeh/BDD.jl)
+[![codecov](https://codecov.io/gh/RenatoGeh/BDD.jl/branch/master/graph/badge.svg)](https://codecov.io/gh/RenatoGeh/BDD.jl)
+
 BDD.jl
 ======
 
