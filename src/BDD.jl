@@ -51,9 +51,10 @@ export is_⊤
 export is_⊥
 
 "Returns whether the given Diagram node represents a variable."
-@inline is_var(α::Diagram)::Bool = (isdefined(α, :low) && is_⊥(α.low)) &&
-                                   (isdefined(α, :high) && is_⊤(α.high))
-export is_var
+@inline is_var(α::Diagram)::Bool = (isdefined(α, :low) && is_⊥(α.low)) && (isdefined(α, :high) && is_⊤(α.high))
+"Returns whether the given Diagram node represents a literal."
+@inline is_lit(α::Diagram)::Bool = isdefined(α, :low) && isdefined(α, :high) && is_term(α.low) && is_term(α.high)
+export is_var, is_lit
 
 "Negates this boolean function."
 @inline (¬)(α::Diagram)::Diagram = is_⊤(α) ? ⊥ : is_⊥(α) ? ⊤ : Diagram(α.index, ¬α.low, ¬α.high)
@@ -106,12 +107,15 @@ export or
 @inline Base.:(!=)(α::Diagram, y::Int)::Bool = !(y == α)
 
 "Returns a new terminal node of given boolean value."
-terminal(v::Bool)::Diagram = Diagram(v)
+@inline terminal(v::Bool)::Diagram = Diagram(v)
 export terminal
 
 "Returns a Diagram representing a single variable. If negative, negate variable."
-variable(i::Int)::Diagram = i > 0 ? Diagram(i, ⊥, ⊤) : Diagram(-i, ⊤, ⊥)
+@inline variable(i::Int)::Diagram = i > 0 ? Diagram(i, ⊥, ⊤) : Diagram(-i, ⊤, ⊥)
 export variable
+
+"Returns 0 if x is not a literal; else returns the literal's sign."
+@inline sign(x::Diagram) = !is_lit(x) ? 0 : x.low == ⊥ ? 1 : -1
 
 "Return string representation of Diagram α."
 function Base.string(α::Diagram)::String

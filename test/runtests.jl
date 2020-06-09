@@ -2,7 +2,7 @@ using Test
 using Random
 
 import BDD: variable, is_⊤, is_⊥, is_term, is_var, ⊤, ⊥, reduce!, Diagram, |, restrict, ¬, ∧, ∨,
-            valuations, conjunctions, convals, shannon, shannon!, or, and, terminal
+            valuations, conjunctions, convals, shannon, shannon!, or, and, terminal, is_lit, sign
 
 x1, x2, x3 = variable(1), variable(2), variable(3)
 X = Diagram[x1, x2, x3]
@@ -62,6 +62,8 @@ end
   @test ⊤.index == -1
   @test terminal(true) == ⊤
   @test terminal(false) == ¬⊤
+  @test !is_lit(⊤)
+  @test sign(⊤) == 0
 end
 
 @testset "Terminal ⊥" begin
@@ -75,11 +77,14 @@ end
   @test ⊥.index == -1
   @test terminal(false) == ⊥
   @test terminal(true) == ¬⊥
+  @test !is_lit(⊥)
+  @test sign(⊥) == 0
 end
 
 @testset "Variable" begin
   for (i, v) ∈ enumerate(X)
     @test is_var(v)
+    @test is_lit(v)
     @test !is_term(v)
     @test !is_⊤(v)
     @test !is_⊥(v)
@@ -87,9 +92,14 @@ end
     @test v.high.value
     @test !v.low.value
     @test v == i
+    @test i == v
+    @test v != i+1
+    @test i+1 != v
     @test ¬v == ¬i
     @test v == ¬¬i
     @test ¬v == ¬¬¬i
+    @test sign(v) == 1
+    @test sign(¬v) == -1
   end
 end
 
@@ -419,6 +429,7 @@ end
   @test !isequal(ϕ, ⊥) == (ϕ != ⊥)
 
   @test !isequal(ϕ, 2) == (ϕ != 2)
+  @test !isequal(2, ϕ) == (2 != ϕ)
   @test !isequal(ϕ, ¬2) == (ϕ != ¬2)
   @test isequal(ϕ, ¬(1 ∨ (2 ∧ 3)) ∨ ((3 ∧ 1) ∨ 2))
 end
