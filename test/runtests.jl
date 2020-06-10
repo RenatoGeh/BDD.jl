@@ -204,6 +204,41 @@ end
   @test f5|[-1, -2] == ⊥
 end
 
+@testset "Evaluation" begin
+  for (i, x) ∈ enumerate(X)
+    @test x(i)
+    @test !x(-i)
+    @test !(¬x)(i)
+    @test (¬x)(-i)
+  end
+
+  n = 3
+  Y = collect(valuations(1:n))
+  dict2vec(C::Dict{Int, Bool})::Vector{Int} = map(p -> p.second > 0 ? p.first : -p.first, collect(C))
+
+  ⋀ = and(collect(1:n))
+  for y ∈ Y
+    if all(values(y))
+      @test ⋀(y)
+      @test ⋀(dict2vec(y))
+    else
+      @test !⋀(y)
+      @test !⋀(dict2vec(y))
+    end
+  end
+
+  ⋁ = or(collect(1:n))
+  for y ∈ Y
+    if all(p -> !p, values(y))
+      @test !⋁(y)
+      @test !⋁(dict2vec(y))
+    else
+      @test ⋁(y)
+      @test ⋁(dict2vec(y))
+    end
+  end
+end
+
 @testset "Negate" begin
   @test ⊤ == ¬⊥
   @test ⊥ == ¬⊤
@@ -299,6 +334,21 @@ end
 
   @test !is_atom(x1 ∧ x3)
   @test !is_atom(x1 ∧ x2 ∨ x3)
+
+  @test and(1, 2, -3) == 1 ∧ 2 ∧ ¬3
+  @test and([1, 2, -3]) == 1 ∧ 2 ∧ ¬3
+  @test and(x1, x2, ¬x3) == 1 ∧ 2 ∧ ¬3
+  @test and([x1, x2, ¬x3]) == 1 ∧ 2 ∧ ¬3
+  @test and(-1, 2, -3) == ¬1 ∧ 2 ∧ ¬3
+  @test and([-1, 2, -3]) == ¬1 ∧ 2 ∧ ¬3
+  @test and(¬x1, x2, ¬x3) == ¬1 ∧ 2 ∧ ¬3
+  @test and([¬x1, x2, ¬x3]) == ¬1 ∧ 2 ∧ ¬3
+  @test and(1, -2, -3) == 1 ∧ ¬2 ∧ ¬3
+  @test and([1, -2, -3]) == 1 ∧ ¬2 ∧ ¬3
+  @test and(x1, ¬x2, ¬x3) == 1 ∧ ¬2 ∧ ¬3
+  @test and([x1, ¬x2, ¬x3]) == 1 ∧ ¬2 ∧ ¬3
+  @test and(1 ∨ 2, 3 ∨ ¬2, ¬1 ∨ 3) == (1 ∨ 2) ∧ (3 ∨ ¬2) ∧ (¬1 ∨ 3)
+  @test and(1 ∨ 2, 3, ¬1 ∨ 3, 1) == (1 ∨ 2) ∧ 3 ∧ (¬1 ∨ 3) ∧ 1
 end
 
 @testset "Disjunction" begin
@@ -370,6 +420,21 @@ end
 
   @test !is_atom(x1 ∨ ¬x3)
   @test !is_atom(x2 ∨ x3 ∧ x1)
+
+  @test or(1, 2, -3) == 1 ∨ 2 ∨ ¬3
+  @test or([1, 2, -3]) == 1 ∨ 2 ∨ ¬3
+  @test or(x1, x2, ¬x3) == 1 ∨ 2 ∨ ¬3
+  @test or([x1, x2, ¬x3]) == 1 ∨ 2 ∨ ¬3
+  @test or(-1, 2, -3) == ¬1 ∨ 2 ∨ ¬3
+  @test or([-1, 2, -3]) == ¬1 ∨ 2 ∨ ¬3
+  @test or(¬x1, x2, ¬x3) == ¬1 ∨ 2 ∨ ¬3
+  @test or([¬x1, x2, ¬x3]) == ¬1 ∨ 2 ∨ ¬3
+  @test or(1, -2, -3) == 1 ∨ ¬2 ∨ ¬3
+  @test or([1, -2, -3]) == 1 ∨ ¬2 ∨ ¬3
+  @test or(x1, ¬x2, ¬x3) == 1 ∨ ¬2 ∨ ¬3
+  @test or([x1, ¬x2, ¬x3]) == 1 ∨ ¬2 ∨ ¬3
+  @test or(1 ∧ 2, 3 ∧ ¬2, ¬1 ∧ 3) == (1 ∧ 2) ∨ (3 ∧ ¬2) ∨ (¬1 ∧ 3)
+  @test or(1 ∧ 2, 3, ¬1 ∧ 3, 1) == (1 ∧ 2) ∨ 3 ∨ (¬1 ∧ 3) ∨ 1
 end
 
 @testset "XOR" begin

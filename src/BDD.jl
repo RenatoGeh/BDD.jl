@@ -74,6 +74,20 @@ export ∧
 @inline and(x::Int, β::Diagram)::Diagram = x ∧ β
 @inline and(α::Diagram, x::Int)::Diagram = α ∧ x
 @inline and(x::Int, y::Int)::Diagram = x ∧ y
+function and(Φ::Vararg{Diagram})::Diagram
+  α = first(Φ)
+  for i ∈ 2:length(Φ) α = α ∧ Φ[i] end
+  return α
+end
+@inline and(Φ::Vector{Diagram})::Diagram = and(Φ...)
+@inline and(Φ::Vararg{Int})::Diagram = and(variable.(Φ)...)
+@inline and(Φ::Vector{Int})::Diagram = and(variable.(Φ)...)
+function and(Φ::Vararg{Union{Int, Diagram}})::Diagram
+  f = first(Φ)
+  α = f isa Int ? variable(f) : f
+  for i ∈ 2:length(Φ) α = α ∧ Φ[i] end
+  return α
+end
 export and
 
 "Returns a disjunction over the given boolean functions."
@@ -87,6 +101,20 @@ export ∨
 @inline or(x::Int, β::Diagram)::Diagram = x ∨ β
 @inline or(α::Diagram, x::Int)::Diagram = α ∨ x
 @inline or(x::Int, y::Int)::Diagram = x ∨ y
+@inline function or(Φ::Vararg{Diagram})::Diagram
+  α = first(Φ)
+  for i ∈ 2:length(Φ) α = α ∨ Φ[i] end
+  return α
+end
+@inline or(Φ::Vector{Diagram})::Diagram = or(Φ...)
+@inline or(Φ::Vararg{Int})::Diagram = or(variable.(Φ)...)
+@inline or(Φ::Vector{Int})::Diagram = or(variable.(Φ)...)
+function or(Φ::Vararg{Union{Int, Diagram}})::Diagram
+  f = first(Φ)
+  α = f isa Int ? variable(f) : f
+  for i ∈ 2:length(Φ) α = α ∨ Φ[i] end
+  return α
+end
 export or
 
 "Returns a xor of the given boolean functions."
@@ -118,6 +146,7 @@ export variable
 
 "Returns 0 if x is not a literal; else returns the literal's sign."
 @inline Base.sign(x::Diagram) = !is_lit(x) ? 0 : x.low == ⊥ ? 1 : -1
+@inline Base.signbit(x::Diagram) = sign(x) == -1
 "Returns 0 if x is not a literal; else returns an integer representation of x."
 @inline to_int(x::Diagram) = !is_lit(x) ? 0 : x.low == ⊥ ? x.index : -x.index
 
@@ -284,6 +313,10 @@ export restrict
 @inline Base.:|(α::Diagram, X::Dict{Int, Bool})::Diagram = restrict(α, X)
 @inline Base.:|(α::Diagram, X::Vector{Int})::Diagram = restrict(α, Dict{Int, Bool}((x -> x > 0 ? x => true : -x => false).(X)))
 @inline Base.:|(α::Diagram, x::Int)::Diagram = restrict(α, Dict{Int, Bool}(x > 0 ? x => true : -x => false))
+"Returns the evaluation of α given an instantiation X. Returns false if X is not a full instantiation."
+@inline (α::Diagram)(X::Dict{Int, Bool})::Bool = is_⊤(restrict(α, X))
+@inline (α::Diagram)(X::Vector{Int})::Bool = is_⊤(α|X)
+@inline (α::Diagram)(x::Int)::Bool = is_⊤(α|x)
 
 "Returns a new Diagram restricted to instantiation X."
 function restrict_step(α::Diagram, X::Dict{Int, Bool})::Diagram
@@ -302,6 +335,7 @@ struct Permutations
   V::Vector{Int}
   m::Int
 end
+@inline Base.length(P::Permutations)::Int = P.m
 
 "Compute all possible valuations of scope V."
 @inline valuations(V::Union{Set{Int}, Vector{Int}, UnitRange{Int}}) = Permutations(collect(V), 2^length(V))
@@ -317,6 +351,7 @@ struct ConjoinedPermutations
   V::Vector{Int}
   m::Int
 end
+@inline Base.length(P::ConjoinedPermutations)::Int = P.m
 
 "Computes all possible valuations of scope V as conjunctions."
 @inline conjunctions(V::Union{Set{Int}, Vector{Int}, UnitRange{Int}}) = ConjoinedPermutations(collect(V), 2^length(V))
@@ -344,6 +379,7 @@ struct ConvalPermutations
   V::Vector{Int}
   m::Int
 end
+@inline Base.length(P::ConvalPermutations) = P.m
 
 "Computes all possible valuations of scope V as both conjunctions and instantiation values."
 @inline convals(V::Union{Set{Int}, Vector{Int}, UnitRange{Int}}) = ConvalPermutations(collect(V), 2^length(V))

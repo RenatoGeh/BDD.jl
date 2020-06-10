@@ -5,7 +5,8 @@ BDD.jl
 ======
 
 BDD.jl is a Julia library for manipulating Binary Decision Diagrams (BDDs).
-This is a partial port of `pyddlib` (see https://github.com/thiagopbueno/pyddlib/).
+This is a partial port of `pyddlib` (see https://github.com/thiagopbueno/pyddlib/)
+with added features.
 
 The following are references used in this package and the original library.
 
