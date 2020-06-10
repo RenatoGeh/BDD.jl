@@ -355,7 +355,7 @@ end
 @inline Base.length(P::ConjoinedPermutations)::Int = P.m
 
 "Computes all possible valuations of scope V as conjunctions."
-@inline conjunctions(V::Union{Set{Int}, Vector{Int}, UnitRange{Int}}) = ConjoinedPermutations(collect(V), 2^length(V))
+@inline conjunctions(V::Union{Set{Int}, Vector{Int}, UnitRange{Int}}) = ConjoinedPermutations(sort!(collect(V)), 2^length(V))
 export conjunctions
 function Base.iterate(P::ConjoinedPermutations, state=0)::Union{Nothing, Tuple{Diagram, Int}}
   s = state + 1
@@ -383,7 +383,7 @@ end
 @inline Base.length(P::ConvalPermutations) = P.m
 
 "Computes all possible valuations of scope V as both conjunctions and instantiation values."
-@inline convals(V::Union{Set{Int}, Vector{Int}, UnitRange{Int}}) = ConvalPermutations(collect(V), 2^length(V))
+@inline convals(V::Union{Set{Int}, Vector{Int}, UnitRange{Int}}) = ConvalPermutations(sort!(collect(V)), 2^length(V))
 export convals
 function Base.iterate(P::ConvalPermutations, state=0)::Union{Nothing, Tuple{Tuple{Diagram, Dict{Int, Bool}}, Int}}
   s = state + 1
