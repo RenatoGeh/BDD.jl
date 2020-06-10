@@ -1,9 +1,7 @@
 using Test
 using Random
 
-import BDD: variable, is_⊤, is_⊥, is_term, is_var, ⊤, ⊥, reduce!, Diagram, |, restrict, ¬, ∧, ∨,
-            valuations, conjunctions, convals, shannon, shannon!, or, and, terminal, is_lit, sign,
-            to_int, is_atom
+using BDD
 
 x1, x2, x3 = variable(1), variable(2), variable(3)
 X = Diagram[x1, x2, x3]
