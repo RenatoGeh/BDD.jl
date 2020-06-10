@@ -56,7 +56,7 @@ export is_⊥
 @inline is_lit(α::Diagram)::Bool = isdefined(α, :low) && isdefined(α, :high) && is_term(α.low) && is_term(α.high)
 "Returns whether the given Diagram node is an atomic formula (i.e. a variable, ⊥, ⊤, or literal)."
 @inline is_atom(α::Diagram)::Bool = is_term(α) || is_lit(α)
-export is_var, is_lit
+export is_var, is_lit, is_atom
 
 "Negates this boolean function."
 @inline (¬)(α::Diagram)::Diagram = is_⊤(α) ? ⊥ : is_⊥(α) ? ⊤ : Diagram(α.index, ¬α.low, ¬α.high)
@@ -149,6 +149,7 @@ export variable
 @inline Base.signbit(x::Diagram) = sign(x) == -1
 "Returns 0 if x is not a literal; else returns an integer representation of x."
 @inline to_int(x::Diagram) = !is_lit(x) ? 0 : x.low == ⊥ ? x.index : -x.index
+export to_int
 
 "Return string representation of Diagram α."
 function Base.string(α::Diagram)::String
