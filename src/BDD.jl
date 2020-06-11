@@ -364,11 +364,11 @@ function Base.iterate(P::ConjoinedPermutations, state=0)::Union{Nothing, Tuple{D
   if state == 0 V = broadcast(-, P.V)
   else V = (i -> (state >> (i-1)) & 1 == 1 ? P.V[i] : -P.V[i]).(1:length(P.V)) end
   local α::Diagram
-  first = true
+  f = true
   for v ∈ Iterators.reverse(V)
-    if first
+    if f
       α = variable(v)
-      first = false
+      f = false
     else
       α = v > 0 ? Diagram(v, ⊥, α) : Diagram(-v, α, ⊥)
     end
@@ -392,11 +392,11 @@ function Base.iterate(P::ConvalPermutations, state=0)::Union{Nothing, Tuple{Tupl
   if state == 0 V = broadcast(-, P.V)
   else V = (i -> (state >> (i-1)) & 1 == 1 ? P.V[i] : -P.V[i]).(1:length(P.V)) end
   local α::Diagram
-  first = true
+  f = true
   for v ∈ Iterators.reverse(V)
-    if first
+    if f
       α = variable(v)
-      first = false
+      f = false
     else
       α = v > 0 ? Diagram(v, ⊥, α) : Diagram(-v, α, ⊥)
     end
