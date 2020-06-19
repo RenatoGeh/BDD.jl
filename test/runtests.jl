@@ -599,3 +599,16 @@ end
 |  |  + (value=$(x2.high.value), id=$(ϕ.high.high.id))
 """
 end
+
+@testset "Elimination" begin
+  elimtest(α::Diagram, Sc::UnitRange{Int}) = for v ∈ Sc @test eliminate(α, v) == ((α|v) ∨ (α|-v)) end
+  elimtest(⊥, 1:2)
+  elimtest(⊤, 1:2)
+  elimtest(variable(1), 1:2)
+  elimtest(¬1, 1:2)
+  elimtest(1 ∨ 2 ∧ 3, 1:3)
+  elimtest(1 ∧ ¬2 ∨ 3, 1:4)
+  elimtest((1 ∧ ¬2) ∨ (¬3 ∧ ¬4), 1:6)
+  elimtest((1 ∨ ¬2) ∧ (¬3 ∨ ¬4), 1:6)
+  elimtest((1 ∨ 2 ∧ ¬3) ∧ 2 ∨ (¬4 ∧ ¬5 ∨ 6) ∧ (1 ∨ ¬2), 1:8)
+end

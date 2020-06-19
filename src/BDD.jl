@@ -430,4 +430,16 @@ end
 
 export shannon, shannon!
 
+"Eliminate a variable through disjunction. Equivalent to the expression (ϕ|x ∨ ϕ|¬x)."
+eliminate(α::Diagram, v::Int)::Diagram = eliminate_step(α, v)
+export eliminate
+function eliminate_step(α::Diagram, v::Int)::Diagram
+  if is_term(α) return α end
+  if α.index == v return α.low ∨ α.high end
+  # If idempotent (which is the case), then recursion suffices.
+  l = eliminate_step(α.low, v)
+  h = eliminate_step(α.high, v)
+  return Diagram(α.index, l, h)
+end
+
 end # module
