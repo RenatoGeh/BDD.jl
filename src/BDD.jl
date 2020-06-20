@@ -442,4 +442,20 @@ function eliminate_step(α::Diagram, v::Int)::Diagram
   return Diagram(α.index, l, h)
 end
 
+"Returns all variables in this formula as a Vector{Int}."
+@inline scope(α::Diagram)::Vector{Int} = collect(scopeset(α))
+export scope
+
+"Returns all variables in this formula as a Set{Int}."
+function scopeset(α::Diagram)::Set{Int}
+  if is_term(α) return Set{Int}() end
+  if is_var(α) return Set{Int}(α.index) end
+  Sc = Set{Int}()
+  foreach(function(v::Diagram)
+            if !is_term(v) push!(Sc, v.index) end
+          end, α)
+  return Sc
+end
+export scopeset
+
 end # module

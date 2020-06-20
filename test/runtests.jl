@@ -612,3 +612,27 @@ end
   elimtest((1 ∨ ¬2) ∧ (¬3 ∨ ¬4), 1:6)
   elimtest((1 ∨ 2 ∧ ¬3) ∧ 2 ∨ (¬4 ∧ ¬5 ∨ 6) ∧ (1 ∨ ¬2), 1:8)
 end
+
+@testset "Scope" begin
+  F = Tuple{Diagram, Set{Int}}[
+    (⊥, Set{Int}()),
+    (⊤, Set{Int}()),
+    (variable(1), Set{Int}([1])),
+    (variable(2), Set{Int}([2])),
+    (¬3, Set{Int}([3])),
+    (¬4, Set{Int}([4])),
+    (1 ∧ 2, Set{Int}([1, 2])),
+    (2 ∧ 4, Set{Int}([2, 4])),
+    (2 ∨ 3, Set{Int}([2, 3])),
+    (3 ∨ 5, Set{Int}([3, 5])),
+    (1 ∧ 2 ∨ ¬3, Set{Int}(collect(1:3))),
+    (2 ∨ ¬1 ∧ 3, Set{Int}(collect(1:3))),
+    ((1 ∧ ¬2) ∨ (¬3 ∧ ¬4), Set{Int}(collect(1:4))),
+    ((1 ∨ ¬2) ∧ (¬3 ∨ ¬4), Set{Int}(collect(1:4))),
+    ((1 ∧ 2 ∨ ¬3) ∧ (¬2 ∧ 1 ∨ ¬4) ∧ (¬3 ∨ 5 ∧ 6), Set{Int}(collect(1:6)))
+  ]
+  for (α, Sc) ∈ F
+    @test scopeset(α) == Sc
+    @test Set{Int}(scope(α)) == Sc
+  end
+end
