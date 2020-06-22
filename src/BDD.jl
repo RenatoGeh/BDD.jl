@@ -36,7 +36,7 @@ const ⊤ = Diagram(true)
 const ⊥ = Diagram(false)
 export ⊤, ⊥
 
-@inline Base.hash(α::Diagram, h::UInt) = hash(α.id, h)
+@inline Base.hash(α::Diagram, h::UInt) = hash((α.id, α.value), h)
 
 "Returns whether this Diagram node is terminal."
 @inline is_term(α::Diagram)::Bool = !isdefined(α, :low) && !isdefined(α, :high)
@@ -172,47 +172,50 @@ end
 Base.show(io::Core.IO, α::Diagram) = show(io, string(α))
 Base.print(io::Core.IO, α::Diagram) = print(io, string(α))
 
-let V::Dict{Int, Diagram}, Q::Vector{Diagram}
+let V::Set{UInt64}, Q::Vector{Diagram}
   function Base.iterate(α::Diagram, state=1)::Union{Nothing, Tuple{Diagram, Integer}}
     if state == 1
       Q = Diagram[α]
-      V = Dict{Int, Diagram}(α.id => α)
+      V = Set{UInt64}(hash(α))
     end
     if isempty(Q) return nothing end
     v = pop!(Q)
     if !is_term(v)
       l, h = v.low, v.high
-      if !haskey(V, h.id) push!(Q, h); V[h.id] = h end
-      if !haskey(V, l.id) push!(Q, l); V[l.id] = l end
+      p, q = hash(l), hash(h)
+      if q ∉ V push!(Q, h); push!(V, q) end
+      if p ∉ V push!(Q, l); push!(V, p) end
     end
     return v, state+1
   end
 end
 
 function Base.foreach(f::Function, α::Diagram)
-  V = Dict{Int, Diagram}(α.id => α)
+  V = Set{UInt64}(hash(α))
   Q = Diagram[α]
   while !isempty(Q)
     v = pop!(Q)
     if !is_term(v)
       l, h = v.low, v.high
-      if !haskey(V, h.id) push!(Q, h); V[h.id] = h end
-      if !haskey(V, l.id) push!(Q, l); V[l.id] = l end
+      p, q = hash(l), hash(h)
+      if q ∉ V push!(Q, h); push!(V, q) end
+      if p ∉ V push!(Q, l); push!(V, p) end
     end
     f(v)
   end
 end
 
 function Base.collect(α::Diagram)::Vector{Diagram}
-  V = Dict{Int, Diagram}(α.id => α)
+  V = Set{UInt64}(hash(α))
   Q = Diagram[α]
   C = Vector{Diagram}()
   while !isempty(Q)
     v = pop!(Q)
     if !is_term(v)
       l, h = v.low, v.high
-      if !haskey(V, h.id) push!(Q, h); V[h.id] = h end
-      if !haskey(V, l.id) push!(Q, l); V[l.id] = l end
+      p, q = hash(l), hash(h)
+      if q ∉ V push!(Q, h); push!(V, q) end
+      if p ∉ V push!(Q, l); push!(V, p) end
     end
     push!(C, v)
   end
@@ -229,7 +232,6 @@ function reduce!(α::Diagram)::Diagram
             i = v.index
             haskey(V, i) ? push!(V[i], v) : V[i] = Diagram[v]
           end, α)
-
   nid = 0
   G = Dict{Int, Diagram}()
   I = sort!(collect(keys(V)), rev=true); pop!(I); pushfirst!(I, -1)
@@ -431,14 +433,14 @@ end
 export shannon, shannon!
 
 "Eliminate a variable through disjunction. Equivalent to the expression (ϕ|x ∨ ϕ|¬x)."
-eliminate(α::Diagram, v::Int)::Diagram = reduce!(eliminate_step(α, v))
+@inline eliminate(α::Diagram, v::Int)::Diagram = reduce!(eliminate_step(α, v))
 export eliminate
 function eliminate_step(α::Diagram, v::Int)::Diagram
-  if is_term(α) return α end
+  if is_term(α) return copy(α) end
   if α.index == v return α.low ∨ α.high end
   # If idempotent (which is the case), then recursion suffices.
-  l = eliminate_step(α.low, v)
-  h = eliminate_step(α.high, v)
+  l = eliminate(α.low, v)
+  h = eliminate(α.high, v)
   return Diagram(α.index, l, h)
 end
 
