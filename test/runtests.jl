@@ -611,6 +611,7 @@ end
   elimtest((1 ∧ ¬2) ∨ (¬3 ∧ ¬4), 1:6)
   elimtest((1 ∨ ¬2) ∧ (¬3 ∨ ¬4), 1:6)
   elimtest((1 ∨ 2 ∧ ¬3) ∧ 2 ∨ (¬4 ∧ ¬5 ∨ 6) ∧ (1 ∨ ¬2), 1:8)
+  elimtest(2 ∧ (2 ∨ ¬3) ∧ (¬3 ∨ ¬4), 1:4)
 end
 
 @testset "Scope" begin

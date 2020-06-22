@@ -431,7 +431,7 @@ end
 export shannon, shannon!
 
 "Eliminate a variable through disjunction. Equivalent to the expression (ϕ|x ∨ ϕ|¬x)."
-eliminate(α::Diagram, v::Int)::Diagram = eliminate_step(α, v)
+eliminate(α::Diagram, v::Int)::Diagram = reduce!(eliminate_step(α, v))
 export eliminate
 function eliminate_step(α::Diagram, v::Int)::Diagram
   if is_term(α) return α end
