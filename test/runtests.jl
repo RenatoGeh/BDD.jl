@@ -528,7 +528,7 @@ end
 end
 
 @testset "Hash function" begin
-  test_hash(ϕ::Diagram) = foreach((x -> @test hash(x) == hash((x.id, x.value))), ϕ)
+  test_hash(ϕ::Diagram) = foreach((x -> @test hash(x) == hash((x.id, x.value, x.index))), ϕ)
   test_hash.([¬(x1 ∨ (x2 ∧ x3)) ∨ ((x3 ∧ x1) ∨ x2), x1 ∧ x2 ∨ x3, (x1 ∧ x2) ∨ (¬x2 ∧ ¬x3),
               (x1 ∧ x2) ∨ (x2 ∧ ¬x3 ∧ ¬x1)])
 end
@@ -610,7 +610,7 @@ end
   elimtest(1 ∧ ¬2 ∨ 3, 1:4)
   elimtest((1 ∧ ¬2) ∨ (¬3 ∧ ¬4), 1:6)
   elimtest((1 ∨ ¬2) ∧ (¬3 ∨ ¬4), 1:6)
-  # elimtest((1 ∨ 2 ∧ ¬3) ∧ 2 ∨ (¬4 ∧ ¬5 ∨ 6) ∧ (1 ∨ ¬2), 1:8)
+  elimtest((1 ∨ 2 ∧ ¬3) ∧ 2 ∨ (¬4 ∧ ¬5 ∨ 6) ∧ (1 ∨ ¬2), 1:8)
   elimtest(2 ∧ (2 ∨ ¬3) ∧ (¬3 ∨ ¬4), 1:4)
 end
 

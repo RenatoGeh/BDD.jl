@@ -36,7 +36,7 @@ const ⊤ = Diagram(true)
 const ⊥ = Diagram(false)
 export ⊤, ⊥
 
-@inline Base.hash(α::Diagram, h::UInt) = hash((α.id, α.value), h)
+@inline Base.hash(α::Diagram, h::UInt) = hash((α.id, α.value, α.index), h)
 
 "Returns whether this Diagram node is terminal."
 @inline is_term(α::Diagram)::Bool = !isdefined(α, :low) && !isdefined(α, :high)
