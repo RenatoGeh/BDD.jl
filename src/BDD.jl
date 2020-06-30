@@ -36,7 +36,16 @@ const ⊤ = Diagram(true)
 const ⊥ = Diagram(false)
 export ⊤, ⊥
 
+"Returns a unique hash for the given node (not BDD as a whole)."
 @inline Base.hash(α::Diagram, h::UInt) = hash((α.id, α.value, α.index), h)
+
+"Returns a unique hash for the whole BDD."
+function deephash(α::Diagram, h::UInt = UInt64(0))
+  H = Tuple{Bool, Int}[]
+  foreach(x -> push!(H, (is_term(x) ? x.value : false, x.index)), α)
+  return hash(H, h)
+end
+export deephash
 
 "Returns whether this Diagram node is terminal."
 @inline is_term(α::Diagram)::Bool = !isdefined(α, :low) && !isdefined(α, :high)

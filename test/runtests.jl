@@ -528,9 +528,28 @@ end
 end
 
 @testset "Hash function" begin
+  Φ = Diagram[¬(x1 ∨ (x2 ∧ x3)) ∨ ((x3 ∧ x1) ∨ x2), x1 ∧ x2 ∨ x3, (x1 ∧ x2) ∨ (¬x2 ∧ ¬x3),
+       (x1 ∧ x2) ∨ (x2 ∧ ¬x3 ∧ ¬x1)]
   test_hash(ϕ::Diagram) = foreach((x -> @test hash(x) == hash((x.id, x.value, x.index))), ϕ)
-  test_hash.([¬(x1 ∨ (x2 ∧ x3)) ∨ ((x3 ∧ x1) ∨ x2), x1 ∧ x2 ∨ x3, (x1 ∧ x2) ∨ (¬x2 ∧ ¬x3),
-              (x1 ∧ x2) ∨ (x2 ∧ ¬x3 ∧ ¬x1)])
+  test_hash.(Φ)
+
+  @test hash(⊤) != hash(x1)
+  @test hash(⊥) != hash(x1)
+  @test hash(⊤) != hash(⊥)
+
+  H = deephash.(Φ)
+  @test allunique(H)
+
+  @test deephash(variable(1)) == deephash(x1)
+  @test deephash(variable(2)) == deephash(x2)
+  @test deephash(variable(3)) == deephash(x3)
+  @test deephash(⊤) != deephash(x1)
+  @test deephash(⊥) != deephash(x1)
+  @test deephash(⊤) != deephash(⊥)
+  @test deephash(⊥) == deephash(1 ∧ ¬1)
+  @test deephash(⊤) == deephash(1 ∨ ¬1)
+  @test deephash((1 ∧ 2) ∧ 3) == deephash(1 ∧ (2 ∧ 3))
+  @test deephash((1 ∨ 2) ∨ 3) == deephash(1 ∨ (2 ∨ 3))
 end
 
 @testset "Shannon decomposition" begin
