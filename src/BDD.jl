@@ -36,16 +36,16 @@ const ⊤ = Diagram(true)
 const ⊥ = Diagram(false)
 export ⊤, ⊥
 
-"Returns a unique hash for the given node (not BDD as a whole)."
-@inline Base.hash(α::Diagram, h::UInt) = hash((α.id, α.value, α.index), h)
+"Returns a shallow hash for the given node (not BDD as a whole)."
+@inline shallowhash(α::Diagram, h::UInt = UInt64(0)) = hash((α.id, α.value, α.index), h)
+export shallowhash
 
 "Returns a unique hash for the whole BDD."
-function deephash(α::Diagram, h::UInt = UInt64(0))
+function Base.hash(α::Diagram, h::UInt)
   H = Tuple{Bool, Int}[]
   foreach(x -> push!(H, (is_term(x) ? x.value : false, x.index)), α)
   return hash(H, h)
 end
-export deephash
 
 "Returns whether this Diagram node is terminal."
 @inline is_term(α::Diagram)::Bool = !isdefined(α, :low) && !isdefined(α, :high)
@@ -185,13 +185,13 @@ let V::Set{UInt64}, Q::Vector{Diagram}
   function Base.iterate(α::Diagram, state=1)::Union{Nothing, Tuple{Diagram, Integer}}
     if state == 1
       Q = Diagram[α]
-      V = Set{UInt64}(hash(α))
+      V = Set{UInt64}(shallowhash(α))
     end
     if isempty(Q) return nothing end
     v = pop!(Q)
     if !is_term(v)
       l, h = v.low, v.high
-      p, q = hash(l), hash(h)
+      p, q = shallowhash(l), shallowhash(h)
       if q ∉ V push!(Q, h); push!(V, q) end
       if p ∉ V push!(Q, l); push!(V, p) end
     end
@@ -200,13 +200,13 @@ let V::Set{UInt64}, Q::Vector{Diagram}
 end
 
 function Base.foreach(f::Function, α::Diagram)
-  V = Set{UInt64}(hash(α))
+  V = Set{UInt64}(shallowhash(α))
   Q = Diagram[α]
   while !isempty(Q)
     v = pop!(Q)
     if !is_term(v)
       l, h = v.low, v.high
-      p, q = hash(l), hash(h)
+      p, q = shallowhash(l), shallowhash(h)
       if q ∉ V push!(Q, h); push!(V, q) end
       if p ∉ V push!(Q, l); push!(V, p) end
     end
@@ -215,14 +215,14 @@ function Base.foreach(f::Function, α::Diagram)
 end
 
 function Base.collect(α::Diagram)::Vector{Diagram}
-  V = Set{UInt64}(hash(α))
+  V = Set{UInt64}(shallowhash(α))
   Q = Diagram[α]
   C = Vector{Diagram}()
   while !isempty(Q)
     v = pop!(Q)
     if !is_term(v)
       l, h = v.low, v.high
-      p, q = hash(l), hash(h)
+      p, q = shallowhash(l), shallowhash(h)
       if q ∉ V push!(Q, h); push!(V, q) end
       if p ∉ V push!(Q, l); push!(V, p) end
     end
