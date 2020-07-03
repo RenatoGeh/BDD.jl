@@ -70,6 +70,7 @@ export is_var, is_lit, is_atom
 "Negates this boolean function."
 @inline (¬)(α::Diagram)::Diagram = is_⊤(α) ? ⊥ : is_⊥(α) ? ⊤ : Diagram(α.index, ¬α.low, ¬α.high)
 @inline (¬)(x::Int)::Diagram = x > 0 ? Diagram(x, ⊤, ⊥) : x < 0 ? Diagram(-x, ⊥, ⊤) : ⊥
+@inline (¬)(x::Bool)::Bool = !x
 export ¬
 
 "Returns a conjunction over the given boolean functions."
@@ -77,6 +78,7 @@ export ¬
 @inline (∧)(x::Int, β::Diagram)::Diagram = apply(variable(x), β, &)
 @inline (∧)(α::Diagram, x::Int)::Diagram = apply(α, variable(x), &)
 @inline (∧)(x::Int, y::Int)::Diagram = apply(variable(x), variable(y), &)
+@inline (∧)(x::Bool, y::Bool)::Bool = x & y
 export ∧
 "Returns a conjunction over the given boolean functions."
 @inline and(α::Diagram, β::Diagram)::Diagram = α ∧ β
@@ -104,6 +106,7 @@ export and
 @inline (∨)(x::Int, β::Diagram)::Diagram = apply(variable(x), β, |)
 @inline (∨)(α::Diagram, x::Int)::Diagram = apply(α, variable(x), |)
 @inline (∨)(x::Int, y::Int)::Diagram = apply(variable(x), variable(y), |)
+@inline (∨)(x::Bool, y::Bool)::Bool = x | y
 export ∨
 "Returns a disjunction over the given boolean functions."
 @inline or(α::Diagram, β::Diagram)::Diagram = α ∨ β
@@ -450,6 +453,18 @@ function eliminate_step(α::Diagram, v::Int)::Diagram
   # If idempotent (which is the case), then recursion suffices.
   l = eliminate(α.low, v)
   h = eliminate(α.high, v)
+  return Diagram(α.index, l, h)
+end
+
+"Marginalize a variable through some binary operation."
+@inline marginalize(α::Diagram, v::Int, ⊕)::Diagram = marginalize_step(α, v, ⊕)
+export marginalize
+function marginalize_step(α::Diagram, v::Int, ⊕)::Diagram
+  if is_term(α) return α end
+  if α.index == v return apply(α.low, α.high, ⊕) end
+  l, h = α.low, α.high
+  l = is_term(l) ? Diagram(l.value ⊕ l.value) : marginalize_step(l, v, ⊕)
+  h = is_term(h) ? Diagram(h.value ⊕ h.value) : marginalize_step(h, v, ⊕)
   return Diagram(α.index, l, h)
 end
 

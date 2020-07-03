@@ -238,6 +238,9 @@ end
 end
 
 @testset "Negate" begin
+  @test ¬false == !false
+  @test ¬true == !true
+
   @test ⊤ == ¬⊥
   @test ⊥ == ¬⊤
 
@@ -264,6 +267,11 @@ end
 end
 
 @testset "Conjunction" begin
+  @test false ∧ false == false & false
+  @test false ∧ true == false & true
+  @test true ∧ false == true & false
+  @test true ∧ true == true & true
+
   # Idempotency.
   @test ⊤ ∧ ⊤ == ⊤
   @test ⊥ ∧ ⊥ == ⊥
@@ -350,6 +358,11 @@ end
 end
 
 @testset "Disjunction" begin
+  @test false ∨ false == false | false
+  @test false ∨ true == false | true
+  @test true ∨ false == true | false
+  @test true ∨ true == true | true
+
   # Idempotency.
   @test ⊤ ∨ ⊤ == ⊤
   @test ⊥ ∨ ⊥ == ⊥
@@ -631,6 +644,22 @@ end
   elimtest((1 ∨ ¬2) ∧ (¬3 ∨ ¬4), 1:6)
   elimtest((1 ∨ 2 ∧ ¬3) ∧ 2 ∨ (¬4 ∧ ¬5 ∨ 6) ∧ (1 ∨ ¬2), 1:8)
   elimtest(2 ∧ (2 ∨ ¬3) ∧ (¬3 ∨ ¬4), 1:4)
+end
+
+@testset "Marginalization" begin
+  margtest(α::Diagram, ⊕, Sc::UnitRange{Int}) = for v ∈ Sc
+    @test marginalize(α, v, ⊕) == apply(α|v, α|-v, ⊕)
+  end
+  for o ∈ Function[⊻, ∨, ∧]
+    margtest(⊥, o, 1:2)
+    margtest(variable(1), o, 1:2)
+    margtest(¬1, o, 1:2)
+    margtest(1 ∨ 2 ∧ 3, o, 1:3)
+    margtest(1 ∧ ¬2 ∨ 3, o, 1:4)
+    margtest((1 ∧ ¬2) ∨ (¬3 ∧ ¬4), o, 1:6)
+    margtest((1 ∨ ¬2) ∧ (¬3 ∨ ¬4), o, 1:6)
+    margtest((1 ∨ 2 ∧ ¬3) ∧ 2 ∨ (¬4 ∧ ¬5 ∨ 6) ∧ (1 ∨ ¬2), o, 1:8)
+  end
 end
 
 @testset "Scope" begin
