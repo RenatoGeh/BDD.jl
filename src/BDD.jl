@@ -188,13 +188,13 @@ let V::Set{UInt64}, Q::Vector{Diagram}
   function Base.iterate(α::Diagram, state=1)::Union{Nothing, Tuple{Diagram, Integer}}
     if state == 1
       Q = Diagram[α]
-      V = Set{UInt64}(shallowhash(α))
+      V = Set{UInt64}(objectid(α))
     end
     if isempty(Q) return nothing end
     v = pop!(Q)
     if !is_term(v)
       l, h = v.low, v.high
-      p, q = shallowhash(l), shallowhash(h)
+      p, q = objectid(l), objectid(h)
       if q ∉ V push!(Q, h); push!(V, q) end
       if p ∉ V push!(Q, l); push!(V, p) end
     end
@@ -209,7 +209,7 @@ function Base.foreach(f::Function, α::Diagram)
     v = pop!(Q)
     if !is_term(v)
       l, h = v.low, v.high
-      p, q = shallowhash(l), shallowhash(h)
+      p, q = objectid(l), objectid(h)
       if q ∉ V push!(Q, h); push!(V, q) end
       if p ∉ V push!(Q, l); push!(V, p) end
     end
@@ -218,14 +218,14 @@ function Base.foreach(f::Function, α::Diagram)
 end
 
 function Base.collect(α::Diagram)::Vector{Diagram}
-  V = Set{UInt64}(shallowhash(α))
+  V = Set{UInt64}(objectid(α))
   Q = Diagram[α]
   C = Vector{Diagram}()
   while !isempty(Q)
     v = pop!(Q)
     if !is_term(v)
       l, h = v.low, v.high
-      p, q = shallowhash(l), shallowhash(h)
+      p, q = objectid(l), objectid(h)
       if q ∉ V push!(Q, h); push!(V, q) end
       if p ∉ V push!(Q, l); push!(V, p) end
     end
@@ -457,10 +457,9 @@ function eliminate_step(α::Diagram, v::Int)::Diagram
 end
 
 "Marginalize a variable through some binary operation."
-@inline marginalize(α::Diagram, v::Int, ⊕)::Diagram = marginalize_step(α, v, ⊕)
+@inline marginalize(α::Diagram, v::Int, ⊕)::Diagram = is_term(α) ? α : reduce!(marginalize_step(α, v, ⊕))
 export marginalize
 function marginalize_step(α::Diagram, v::Int, ⊕)::Diagram
-  if is_term(α) return α end
   if α.index == v return apply(α.low, α.high, ⊕) end
   l, h = α.low, α.high
   l = is_term(l) ? Diagram(l.value ⊕ l.value) : marginalize_step(l, v, ⊕)

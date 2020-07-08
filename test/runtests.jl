@@ -648,7 +648,7 @@ end
 
 @testset "Marginalization" begin
   margtest(α::Diagram, ⊕, Sc::UnitRange{Int}) = for v ∈ Sc
-    @test marginalize(α, v, ⊕) == apply(α|v, α|-v, ⊕)
+    @test marginalize(α, v, ⊕) == (α|v) ⊕ (α|-v)
   end
   for o ∈ Function[⊻, ∨, ∧]
     margtest(⊥, o, 1:2)
