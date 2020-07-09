@@ -457,14 +457,13 @@ function eliminate_step(α::Diagram, v::Int)::Diagram
 end
 
 "Marginalize a variable through some binary operation."
-@inline marginalize(α::Diagram, v::Int, ⊕)::Diagram = is_term(α) ? α : reduce!(marginalize_step(α, v, ⊕))
+@inline marginalize(α::Diagram, v::Int, ⊕)::Diagram = is_term(α) ? Diagram(α.value ⊕ α.value) : reduce!(marginalize_step(α, v, ⊕))
 export marginalize
 function marginalize_step(α::Diagram, v::Int, ⊕)::Diagram
   if α.index == v return apply(α.low, α.high, ⊕) end
+  if is_term(α) return Diagram(α.value ⊕ α.value) end
   l, h = α.low, α.high
-  l = is_term(l) ? Diagram(l.value ⊕ l.value) : marginalize_step(l, v, ⊕)
-  h = is_term(h) ? Diagram(h.value ⊕ h.value) : marginalize_step(h, v, ⊕)
-  return Diagram(α.index, l, h)
+  return Diagram(α.index, marginalize_step(l, v, ⊕), marginalize_step(h, v, ⊕))
 end
 
 "Returns all variables in this formula as a Vector{Int}."

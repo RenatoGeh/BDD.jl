@@ -652,6 +652,7 @@ end
   end
   for o ∈ Function[⊻, ∨, ∧]
     margtest(⊥, o, 1:2)
+    margtest(⊤, o, 1:2)
     margtest(variable(1), o, 1:2)
     margtest(¬1, o, 1:2)
     margtest(1 ∨ 2 ∧ 3, o, 1:3)
