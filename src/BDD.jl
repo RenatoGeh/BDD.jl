@@ -14,7 +14,7 @@ mutable struct Diagram
   "Unique identifier."
   id::Int
   "Constructs a terminal."
-  function Diagram(v::Bool)
+  function Diagram(v::Bool)::Diagram
     α = new()
     global nextid
     α.index, α.value, α.id = -1, v, nextid
@@ -22,7 +22,7 @@ mutable struct Diagram
     return α
   end
   "Constructs a variable."
-  function Diagram(i::Int, low::Diagram, high::Diagram)
+  function Diagram(i::Int, low::Diagram, high::Diagram)::Diagram
     α = new()
     global nextid
     α.index, α.low, α.high, α.id = i, low, high, nextid
@@ -41,7 +41,7 @@ export ⊤, ⊥
 export shallowhash
 
 "Returns a unique hash for the whole BDD."
-function Base.hash(α::Diagram, h::UInt)
+function Base.hash(α::Diagram, h::UInt)::UInt
   H = Tuple{Bool, Int}[]
   foreach(x -> push!(H, (is_term(x) ? x.value : false, x.index)), α)
   return hash(H, h)
@@ -215,6 +215,7 @@ function Base.foreach(f::Function, α::Diagram)
     end
     f(v)
   end
+  nothing
 end
 
 function Base.collect(α::Diagram)::Vector{Diagram}
