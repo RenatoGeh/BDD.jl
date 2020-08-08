@@ -686,3 +686,22 @@ end
     @test Set{Int}(scope(α)) == Sc
   end
 end
+
+@testset "Mentions" begin
+  Sc = collect(1:10)
+  T = [collect(1:4), [1, 3, 5, 7, 9], [2, 4, 6, 8], [1, 2, 3, 6, 7, 8], [1, 5, 8], collect(1:10)]
+  Φ = [(1 ∧ 2) ∨ (¬2 ∧ 3) ∨ (¬3 ∧ 4), (1 ∧ 3 ∧ 5) ∨ (7 ∧ 9), 2 ∨ 4 ∨ 6 ∨ 8, 1 ∧ 2 ∨ 3 ∧ 6 ∨ 7 ∧ 8,
+       (1 ∧ 5) ∨ (¬1 ∧ ¬5) ∨ (5 ∧ 8) ∨ (¬8 ∧ 1), and(collect(1:10))]
+  for (t, ϕ) ∈ zip(T, Φ)
+    for x ∈ Sc
+      @test mentions(ϕ, x) == (x ∈ t)
+      @test !mentions(ϕ, x) == (x ∉ t)
+      @test (x ∈ ϕ) == (x ∈ t)
+      @test (x ∉ ϕ) == (x ∉ t)
+    end
+    @test mentions(ϕ, t)
+    @test !mentions(ϕ, setdiff(Sc, t))
+    @test mentions(ϕ, t[begin:3])
+    @test mentions(ϕ, t[2:end])
+  end
+end

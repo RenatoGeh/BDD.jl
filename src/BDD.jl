@@ -483,4 +483,42 @@ function scopeset(α::Diagram)::Set{Int}
 end
 export scopeset
 
+"Returns whether the formula (i.e. BDD) mentions a variable."
+function mentions(α::Diagram, x::Int)::Bool
+  V = Set{UInt64}(shallowhash(α))
+  Q = Diagram[α]
+  while !isempty(Q)
+    v = pop!(Q)
+    if !is_term(v)
+      if v.index == x return true end
+      l, h = v.low, v.high
+      p, q = objectid(l), objectid(h)
+      if q ∉ V push!(Q, h); push!(V, q) end
+      if p ∉ V push!(Q, l); push!(V, p) end
+    end
+  end
+  return false
+end
+function mentions(α::Diagram, X::Vector{Int})::Bool
+  M = Set{Int}(X)
+  V = Set{UInt64}(shallowhash(α))
+  Q = Diagram[α]
+  while !isempty(Q)
+    v = pop!(Q)
+    if !is_term(v)
+      if v.index ∈ M return true end
+      l, h = v.low, v.high
+      p, q = objectid(l), objectid(h)
+      if q ∉ V push!(Q, h); push!(V, q) end
+      if p ∉ V push!(Q, l); push!(V, p) end
+    end
+  end
+  return false
+end
+export mentions
+@inline Base.:∈(x::Int, α::Diagram)::Bool = mentions(α, x)
+@inline Base.:∉(x::Int, α::Diagram)::Bool = !mentions(α, x)
+@inline Base.:∈(X::Vector{Int}, α::Diagram)::Bool = mentions(α, X)
+@inline Base.:∉(X::Vector{Int}, α::Diagram)::Bool = !mentions(α, X)
+
 end # module
