@@ -703,5 +703,9 @@ end
     @test !mentions(ϕ, setdiff(Sc, t))
     @test mentions(ϕ, t[begin:3])
     @test mentions(ϕ, t[2:end])
+    @test t ∈ ϕ
+    @test setdiff(Sc, t) ∉ ϕ
+    @test t[begin:3] ∈ ϕ
+    @test t[2:end] ∈ ϕ
   end
 end
