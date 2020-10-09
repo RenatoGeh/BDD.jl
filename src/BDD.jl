@@ -521,4 +521,23 @@ export mentions
 @inline Base.:∈(X::Vector{Int}, α::Diagram)::Bool = mentions(α, X)
 @inline Base.:∉(X::Vector{Int}, α::Diagram)::Bool = !mentions(α, X)
 
+"Assumes ϕ is a full conjunction of literals. Returns ϕ as a zero-one vector and its scope."
+function lit_vec(α::Diagram)::Tuple{BitVector, Vector{Int}}
+  X = BitVector()
+  S = Vector{Int}()
+  Q = Diagram[α]
+  # BDDs guarantee variables are top-down increasing.
+  while !isempty(Q)
+    v = pop!(Q)
+    if !is_term(v)
+      push!(S, v.index)
+      push!(X, is_⊥(v.low) ? true : false)
+      if !is_term(v.low) push!(Q, v.low) end
+      if !is_term(v.high) push!(Q, v.high) end
+    end
+  end
+  return X, S
+end
+export lit_vec
+
 end # module

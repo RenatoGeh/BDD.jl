@@ -709,3 +709,13 @@ end
     @test t[2:end] ∈ ϕ
   end
 end
+
+@testset "Literal vector" begin
+  Φ = [1∧2∧3∧4∧5, 1∧¬2∧3∧4∧¬5, 4∧¬3∧7∧¬1, 5∧4∧¬2∧¬1, ¬1∧¬5∧¬4∧¬2]
+  E = [trues(5), [1,0,1,1,0], [0,0,1,1], [0,0,1,1], falses(4)]
+  for (ϕ, e) ∈ zip(Φ, E)
+    X, S = lit_vec(ϕ)
+    @test X == e
+    @test S == sort(scope(ϕ))
+  end
+end
