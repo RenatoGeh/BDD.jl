@@ -719,3 +719,14 @@ end
     @test S == sort(scope(ϕ))
   end
 end
+
+@testset "Literal conversion" begin
+  m = 50
+  E_p, E_n = 1:m, -m:-1
+  p = variable.(E_p)
+  n = variable.(E_n)
+  for i ∈ 1:m
+    @test to_lit(p[i]) == E_p[i]
+    @test to_lit(n[i]) == E_n[i]
+  end
+end

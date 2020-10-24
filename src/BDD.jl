@@ -540,4 +540,8 @@ function lit_vec(α::Diagram)::Tuple{BitVector, Vector{Int}}
 end
 export lit_vec
 
+"Returns α as an Int32 literal. Assumes α is a leaf node."
+@inline to_lit(α::Diagram)::Int32 = Int32(is_⊥(α.low) ? α.index : -α.index)
+export to_lit
+
 end # module
