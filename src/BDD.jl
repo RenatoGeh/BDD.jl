@@ -544,4 +544,55 @@ export lit_vec
 @inline to_lit(α::Diagram)::Int32 = Int32(is_⊥(α.low) ? α.index : -α.index)
 export to_lit
 
+"""Translates a cardinality constraint in normal pseudo-boolean constraint form into a BDD.
+
+Since cardinality constraints correspond to having coefficients set to one, we ignore the C's.
+
+Argument L corresponds to the vector of literals to be chosen from; b is how many literals in L are
+selected.
+
+See Eén and Sörensson 2006."""
+@inline function from_npbc(L::Vector{Int}, b::Int)::Diagram
+  return reduce!(from_npbc_step(L, b, length(L), 0, Dict{Tuple{Int, Int}, Diagram}(),
+                                Diagram(false), Diagram(true)))
+end
+function from_npbc_step(L::Vector{Int}, b::Int, n::Int, s::Int, M::Dict{Tuple{Int, Int}, Diagram},
+                        reuse_⊥::Diagram, reuse_⊤::Diagram)::Diagram
+  if s >= b return reuse_⊤
+  elseif s + n < b return reuse_⊥ end
+  k = (n, s)
+  if k ∉ keys(M)
+    v = L[n]
+    positive = v > 0
+    if positive
+      h_s, l_s = s+1, s
+    else
+      h_s, l_s = s, s+1
+      v = -v
+    end
+    m = n-1
+    h = from_npbc_step(L, b, m, h_s, M, reuse_⊥, reuse_⊤)
+    l = from_npbc_step(L, b, m, l_s, M, reuse_⊥, reuse_⊤)
+    M[k] = Diagram(v, l, h)
+  end
+  return M[k]
+end
+
+"Constructs a BDD mapping to true if at least n literals in L are in the input; otherwise false."
+@inline atleast!(n::Int, L::Vector{Int})::Diagram = from_npbc(sort!(L, by=x->abs(x), rev=true), n)
+"Constructs a BDD mapping to true if at least n literals in L are in the input; otherwise false."
+@inline atleast(n::Int, L::Vector{Int})::Diagram = atleast!(n, copy(L))
+"Constructs a BDD mapping to true if at most n literals in L are in the input; otherwise false."
+@inline atmost!(n::Int, L::Vector{Int})::Diagram = (m = length(L); L .= -L; from_npbc(sort!(L, by=x->abs(x), rev=true), m-n))
+"Constructs a BDD mapping to true if at most n literals in L are in the input; otherwise false."
+@inline atmost(n::Int, L::Vector{Int})::Diagram = atmost!(n, copy(L))
+"Constructs a BDD mapping to true if exactly n literals in L are in the input; otherwise false."
+@inline exactly!(n::Int, L::Vector{Int})::Diagram = (α = from_npbc(sort!(L, by=x->abs(x), rev=true), n); β = from_npbc(L .= -L, length(L)-n); α ∧ β)
+"Constructs a BDD mapping to true if exactly n literals in L are in the input; otherwise false."
+@inline exactly(n::Int, L::Vector{Int})::Diagram = exactly!(n, copy(L))
+export atleast, atmost, exactly, atleast!, atmost!, exactly!
+
+"Returns the number of nodes in the BDD graph."
+@inline Base.size(α::Diagram)::Int = (n = 0; foreach(x -> n += 1, α); n)
+
 end # module

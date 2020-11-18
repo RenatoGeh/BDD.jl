@@ -730,3 +730,72 @@ end
     @test to_lit(n[i]) == E_n[i]
   end
 end
+
+@testset "At least" begin
+  B = [3, 5, 10, 13, 25, 37, 48, 59, 72, 81, 97]
+  L = [collect(1:100), collect(1:200), -collect(1:100), -collect(1:200)]
+  h_p, h_n = x -> count(values(x)), x -> length(x)-count(values(x))
+  how = [h_p, h_p, h_n, h_n]
+  for (l, h) ∈ zip(L, how)
+    for b ∈ B
+      α = atleast(b, l)
+      for x ∈ valuations(l)
+        if h(x) >= b
+          @test α(x) == true
+        else
+          @test α(x) == false
+        end
+      end
+    end
+  end
+end
+
+@testset "At most" begin
+  B = [3, 5, 10, 13, 25, 37, 48, 59, 72, 81, 97]
+  L = [collect(1:100), collect(1:200), -collect(1:100), -collect(1:200)]
+  h_p, h_n = x -> count(values(x)), x -> length(x)-count(values(x))
+  how = [h_p, h_p, h_n, h_n]
+  for (l, h) ∈ zip(L, how)
+    for b ∈ B
+      α = atmost(b, l)
+      for x ∈ valuations(l)
+        if h(x) <= b
+          @test α(x) == true
+        else
+          @test α(x) == false
+        end
+      end
+    end
+  end
+end
+
+@testset "Exactly" begin
+  B = [3, 5, 10, 13, 25, 37, 48, 59, 72, 81, 97]
+  L = [collect(1:100), collect(1:200), -collect(1:100), -collect(1:200)]
+  h_p, h_n = x -> count(values(x)), x -> length(x)-count(values(x))
+  how = [h_p, h_p, h_n, h_n]
+  for (l, h) ∈ zip(L, how)
+    for b ∈ B
+      α = atmost(b, l) ∧ atleast(b, l)
+      β = exactly(b, l)
+      for x ∈ valuations(l)
+        if h(x) == b
+          @test α(x) == true
+          @test β(x) == true
+        else
+          @test α(x) == false
+          @test β(x) == false
+        end
+      end
+    end
+  end
+end
+
+@testset "Size" begin
+  Φ = [⊤, ⊥, variable(1), variable(-1), 1 ∧ 2, 1 ∨ ¬2, 1 ∧ 2 ∧ (3 ∨ 4), (1 ∨ ¬2) ∧ (¬3 ∨ 4),
+       (1 ∧ 2) ∨ (¬2 ∧ 3) ∨ (¬3 ∧ 4), (1 ∧ 3 ∧ 5) ∨ (7 ∧ 9), 2 ∨ 4 ∨ 6 ∨ 8, 1 ∧ 2 ∨ 3 ∧ 6 ∨ 7 ∧ 8,
+       (1 ∧ 5) ∨ (¬1 ∧ ¬5) ∨ (5 ∧ 8) ∨ (¬8 ∧ 1), and(collect(1:10))]
+  for ϕ ∈ Φ
+    @test size(ϕ) == length(collect(ϕ))
+  end
+end
