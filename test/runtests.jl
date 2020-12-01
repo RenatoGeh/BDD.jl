@@ -1,7 +1,7 @@
 using Test
 using Random
 
-using BDD
+using BinaryDecisionDiagrams
 
 x1, x2, x3 = variable(1), variable(2), variable(3)
 X = Diagram[x1, x2, x3]

@@ -1,12 +1,24 @@
 [![Build Status](https://travis-ci.com/RenatoGeh/BDD.jl.svg?branch=master)](https://travis-ci.com/RenatoGeh/BDD.jl)
 [![codecov](https://codecov.io/gh/RenatoGeh/BDD.jl/branch/master/graph/badge.svg)](https://codecov.io/gh/RenatoGeh/BDD.jl)
 
-BDD.jl
+BinaryDecisionDiagrams.jl (BDD.jl)
 ======
 
 BDD.jl is a Julia library for manipulating Binary Decision Diagrams (BDDs).
-This is a partial port of `pyddlib` (see https://github.com/thiagopbueno/pyddlib/)
-with added features.
+
+It started as a partial port of `pyddlib` (see https://github.com/thiagopbueno/pyddlib/) but now
+has many more features compared to the original package, such as
+
+- Iterating over all possible worlds;
+- Functions for easily constructing conjunctions and disjunctions;
+- BDD iterators and collection functions;
+- Full support for equivalent formulae as keys in a dictionary;
+- Shannon's decomposition;
+- Variable elimination (aka the `forget` operation);
+- Marginalization of a formula given some binary operator (generalization of `forget`);
+- Functions for identifying a BDD's scope and verifying a variable's membership;
+- Extracting conjunctions as bit arrays;
+- Constructors for cardinality constraint formulae (at least, at most and exactly).
 
 The following are references used in this package and the original library.
 
@@ -23,6 +35,14 @@ Install
 
 It is required to have Julia installed.
 
+This package is available on the Julia General Registries.
+
+```bash
+  $ julia -e 'using Pkg; Pkg.add("BinaryDecisionDiagrams")'
+```
+
+Alternatively, you may add this repository manualy.
+
 ```bash
   $ julia -e 'using Pkg; Pkg.add("https://github.com/RenatoGeh/BDD.jl")'
 ```
@@ -31,7 +51,7 @@ Testing
 -------
 
 ```bash
-  $ julia -e 'using Pkg; Pkg.test("BDD")'
+  $ julia -e 'using Pkg; Pkg.test("BinaryDecisionDiagrams")'
 ```
 
 Usage
@@ -40,6 +60,8 @@ Usage
 You create BDDs from constants and variables by composing boolean
 functions with logical operations AND (∧), OR (∨), XOR (⊻) and
 negation (¬).
+
+See `test/runtests.jl` for a comprehensive collection of examples on each feature.
 
 ```julia
   import BDD: ⊤, ⊥, variable, ∧, ∨, ⊻, ¬, |
