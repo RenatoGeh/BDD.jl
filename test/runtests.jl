@@ -212,16 +212,31 @@ end
 
   n = 3
   Y = collect(valuations(1:n))
-  dict2vec(C::Dict{Int, Bool})::Vector{Int} = map(p -> p.second > 0 ? p.first : -p.first, collect(C))
+  dict2vec(C::Dict{Int, Bool})::Vector{Int} = map(p -> p.second ? p.first : -p.first, collect(C))
+  dict2bitvec(C::Dict{Int, Bool})::BitVector = (V = BitVector(undef, n); foreach(p -> V[p.first] = p.second, collect(C)); V)
+  dict2sub1int(C::Dict{Int, Bool})::SubArray{Int} = view(dict2vec(C), :)
+  dict2sub1bool(C::Dict{Int, Bool})::SubArray{Bool} = view(dict2bitvec(C), :)
+  dict2sub2int(C::Dict{Int, Bool})::SubArray{Int} = view(dict2vec(C), :, :)
+  dict2sub2bool(C::Dict{Int, Bool})::SubArray{Bool} = view(dict2bitvec(C), :, :)
 
   ⋀ = and(collect(1:n))
   for y ∈ Y
     if all(values(y))
       @test ⋀(y)
       @test ⋀(dict2vec(y))
+      @test ⋀(dict2bitvec(y))
+      @test ⋀(dict2sub1int(y))
+      @test ⋀(dict2sub1bool(y))
+      @test ⋀(dict2sub2int(y))
+      @test ⋀(dict2sub2bool(y))
     else
       @test !⋀(y)
       @test !⋀(dict2vec(y))
+      @test !⋀(dict2bitvec(y))
+      @test !⋀(dict2sub1int(y))
+      @test !⋀(dict2sub1bool(y))
+      @test !⋀(dict2sub2int(y))
+      @test !⋀(dict2sub2bool(y))
     end
   end
 
@@ -230,9 +245,19 @@ end
     if all(p -> !p, values(y))
       @test !⋁(y)
       @test !⋁(dict2vec(y))
+      @test !⋁(dict2bitvec(y))
+      @test !⋁(dict2sub1int(y))
+      @test !⋁(dict2sub1bool(y))
+      @test !⋁(dict2sub2int(y))
+      @test !⋁(dict2sub2bool(y))
     else
       @test ⋁(y)
       @test ⋁(dict2vec(y))
+      @test ⋁(dict2bitvec(y))
+      @test ⋁(dict2sub1int(y))
+      @test ⋁(dict2sub1bool(y))
+      @test ⋁(dict2sub2int(y))
+      @test ⋁(dict2sub2bool(y))
     end
   end
 end

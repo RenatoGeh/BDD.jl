@@ -324,19 +324,22 @@ end
 
 "Returns a new reduced Diagram restricted to instantiation X."
 @inline restrict(α::Diagram, X::Dict{Int, Bool})::Diagram = reduce!(restrict_step(α, X))
-@inline restrict(α::Diagram, X::Vector{Int})::Diagram = reduce!(restrict_step(α, X))
+@inline restrict(α::Diagram, X::AbstractArray{Int})::Diagram = reduce!(restrict_step(α, X))
 @inline restrict(α::Diagram, X::BitVector)::Diagram = reduce!(restrict_step(α, X))
+@inline restrict(α::Diagram, X::AbstractArray{Bool})::Diagram = reduce!(restrict_step(α, X))
 export restrict
 "Returns a new reduced Diagram restricted to instantiation X."
 @inline Base.:|(α::Diagram, X::Dict{Int, Bool})::Diagram = restrict(α, X)
-@inline Base.:|(α::Diagram, X::Vector{Int})::Diagram = restrict(α, X)
+@inline Base.:|(α::Diagram, X::AbstractArray{Int})::Diagram = restrict(α, X)
 @inline Base.:|(α::Diagram, X::BitVector)::Diagram = restrict(α, X)
 @inline Base.:|(α::Diagram, x::Int)::Diagram = restrict(α, Dict{Int, Bool}(x > 0 ? x => true : -x => false))
+@inline Base.:|(α::Diagram, X::AbstractArray{Bool})::Diagram = restrict(α, X)
 "Returns the evaluation of α given an instantiation X. Returns false if X is not a full instantiation."
 @inline (α::Diagram)(X::Dict{Int, Bool})::Bool = is_⊤(restrict(α, X))
-@inline (α::Diagram)(X::Vector{Int})::Bool = is_⊤(α|X)
+@inline (α::Diagram)(X::AbstractArray{Int})::Bool = is_⊤(α|X)
 @inline (α::Diagram)(X::BitVector)::Bool = is_⊤(α|X)
 @inline (α::Diagram)(x::Int)::Bool = is_⊤(α|x)
+@inline (α::Diagram)(X::AbstractArray{Bool})::Bool = is_⊤(α|X)
 
 "Returns a new Diagram restricted to instantiation X."
 function restrict_step(α::Diagram, X::Dict{Int, Bool})::Diagram
@@ -352,7 +355,7 @@ function restrict_step(α::Diagram, X::Dict{Int, Bool})::Diagram
 end
 
 "Returns a new Diagram restricted to instantiation X."
-function restrict_step(α::Diagram, X::Vector{Int})::Diagram
+function restrict_step(α::Diagram, X::AbstractArray{Int})::Diagram
   if is_term(α) return copy(α) end
   x = α.index
   if x > length(X)
@@ -366,6 +369,19 @@ end
 
 "Returns a new Diagram restricted to instantiation X."
 function restrict_step(α::Diagram, X::BitVector)::Diagram
+  if is_term(α) return copy(α) end
+  x = α.index
+  if x > length(X)
+    l = restrict_step(α.low, X)
+    h = restrict_step(α.high, X)
+    return Diagram(x, l, h)
+  end
+  if X[x] return restrict_step(α.high, X) end
+  return restrict_step(α.low, X)
+end
+
+"Returns a new Diagram restricted to instantiation X."
+function restrict_step(α::Diagram, X::AbstractArray{Bool})::Diagram
   if is_term(α) return copy(α) end
   x = α.index
   if x > length(X)
