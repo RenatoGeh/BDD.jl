@@ -824,3 +824,18 @@ end
     @test size(ϕ) == length(collect(ϕ))
   end
 end
+
+@testset "Valuations as a Matrix" begin
+  Random.seed!(101)
+  for i ∈ 1:50
+    Sc = Random.randsubseq(collect(1:10), 0.5)
+    n = length(Sc)
+    M = all_valuations(Sc)
+    for (j, X) ∈ enumerate(valuations(Sc))
+      Y = BitVector(undef, n)
+      K = sort(collect(keys(X)))
+      for (l, k) ∈ enumerate(K) Y[l] = X[k] end
+      @test M[j,:] == Y
+    end
+  end
+end

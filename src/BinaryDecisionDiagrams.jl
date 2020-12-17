@@ -409,6 +409,22 @@ function Base.iterate(P::Permutations, state=0)::Union{Nothing, Tuple{Dict{Int, 
   return Dict{Int, Bool}((i -> P.V[i] => (state >> (i-1)) & 1 == 1).(1:length(P.V))), s
 end
 
+"Computes all possible valuations of scope V and returns as a BitMatrix. Up to 64 variables."
+function all_valuations(V::Union{Set{Int}, Vector{Int}, UnitRange{Int}})::BitMatrix
+  m = length(V)
+  n = 2^m
+  M = BitMatrix(undef, (n, m))
+  for i ∈ 1:n
+    p = i-1
+    for j ∈ 1:m
+      M[i, j] = p & 1
+      p >>= 1
+    end
+  end
+  return M
+end
+export all_valuations
+
 struct ConjoinedPermutations
   V::Vector{Int}
   m::Int
