@@ -717,21 +717,29 @@ end
   T = [collect(1:4), [1, 3, 5, 7, 9], [2, 4, 6, 8], [1, 2, 3, 6, 7, 8], [1, 5, 8], collect(1:10)]
   Φ = [(1 ∧ 2) ∨ (¬2 ∧ 3) ∨ (¬3 ∧ 4), (1 ∧ 3 ∧ 5) ∨ (7 ∧ 9), 2 ∨ 4 ∨ 6 ∨ 8, 1 ∧ 2 ∨ 3 ∧ 6 ∨ 7 ∧ 8,
        (1 ∧ 5) ∨ (¬1 ∧ ¬5) ∨ (5 ∧ 8) ∨ (¬8 ∧ 1), and(collect(1:10))]
+  C = [Int32, Int64]
+  C_v = [Vector{Int32}, Vector{Int64}]
   for (t, ϕ) ∈ zip(T, Φ)
     for x ∈ Sc
-      @test mentions(ϕ, x) == (x ∈ t)
-      @test !mentions(ϕ, x) == (x ∉ t)
-      @test (x ∈ ϕ) == (x ∈ t)
-      @test (x ∉ ϕ) == (x ∉ t)
+      for cast ∈ C
+        y = cast(x)
+        @test mentions(ϕ, y) == (y ∈ t)
+        @test !mentions(ϕ, y) == (y ∉ t)
+        @test (y ∈ ϕ) == (y ∈ t)
+        @test (y ∉ ϕ) == (y ∉ t)
+      end
     end
-    @test mentions(ϕ, t)
-    @test !mentions(ϕ, setdiff(Sc, t))
-    @test mentions(ϕ, t[begin:3])
-    @test mentions(ϕ, t[2:end])
-    @test t ∈ ϕ
-    @test setdiff(Sc, t) ∉ ϕ
-    @test t[begin:3] ∈ ϕ
-    @test t[2:end] ∈ ϕ
+    for cast ∈ C_v
+      u = convert(cast, t)
+      @test mentions(ϕ, u)
+      @test !mentions(ϕ, setdiff(Sc, u))
+      @test mentions(ϕ, u[begin:3])
+      @test mentions(ϕ, u[2:end])
+      @test u ∈ ϕ
+      @test setdiff(Sc, u) ∉ ϕ
+      @test u[begin:3] ∈ ϕ
+      @test u[2:end] ∈ ϕ
+    end
   end
 end
 

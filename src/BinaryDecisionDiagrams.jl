@@ -546,7 +546,7 @@ end
 export scopeset
 
 "Returns whether the formula (i.e. BDD) mentions a variable."
-function mentions(α::Diagram, x::Int)::Bool
+function mentions(α::Diagram, x::Union{Int32, Int64})::Bool
   V = Set{UInt64}(shallowhash(α))
   Q = Diagram[α]
   while !isempty(Q)
@@ -561,7 +561,7 @@ function mentions(α::Diagram, x::Int)::Bool
   end
   return false
 end
-function mentions(α::Diagram, X::Vector{Int})::Bool
+function mentions(α::Diagram, X::Union{Vector{Int32}, Vector{Int64}})::Bool
   M = Set{Int}(X)
   V = Set{UInt64}(shallowhash(α))
   Q = Diagram[α]
@@ -578,10 +578,10 @@ function mentions(α::Diagram, X::Vector{Int})::Bool
   return false
 end
 export mentions
-@inline Base.:∈(x::Int, α::Diagram)::Bool = mentions(α, x)
-@inline Base.:∉(x::Int, α::Diagram)::Bool = !mentions(α, x)
-@inline Base.:∈(X::Vector{Int}, α::Diagram)::Bool = mentions(α, X)
-@inline Base.:∉(X::Vector{Int}, α::Diagram)::Bool = !mentions(α, X)
+@inline Base.:∈(x::Union{Int32, Int64}, α::Diagram)::Bool = mentions(α, x)
+@inline Base.:∉(x::Union{Int32, Int64}, α::Diagram)::Bool = !mentions(α, x)
+@inline Base.:∈(X::Union{Vector{Int32}, Vector{Int64}}, α::Diagram)::Bool = mentions(α, X)
+@inline Base.:∉(X::Union{Vector{Int32}, Vector{Int64}}, α::Diagram)::Bool = !mentions(α, X)
 
 "Assumes ϕ is a full conjunction of literals. Returns ϕ as a zero-one vector and its scope."
 function lit_vec(α::Diagram)::Tuple{BitVector, Vector{Int}}
