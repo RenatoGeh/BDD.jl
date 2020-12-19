@@ -847,3 +847,23 @@ end
     end
   end
 end
+
+@testset "Value of literal in conjunction" begin
+  Φ = [1∧2∧3∧4∧5, 1∧¬2∧3∧4∧¬5, 4∧¬3∧7∧¬1, 5∧4∧¬2∧¬1, ¬1∧¬5∧¬4∧¬2]
+  C = [UInt16, UInt32, UInt64, Int32, Int64]
+  O = [11, 20, 30, 40, 50, 60]
+  for ϕ ∈ Φ
+    X, S = lit_vec(ϕ)
+    for (i, x) ∈ enumerate(S)
+      for c ∈ C
+        y = c(x)
+        @test lit_val(ϕ, y) == !is_⊥(ϕ|x)
+        for o ∈ O @test lit_val(ϕ, o) == false end
+        if c <: Signed
+          @test lit_val(ϕ, -y) == is_⊥(ϕ|x)
+          for o ∈ O @test lit_val(ϕ, -o) == false end
+        end
+      end
+    end
+  end
+end

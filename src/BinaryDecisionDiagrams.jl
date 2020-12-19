@@ -657,4 +657,22 @@ export atleast, atmost, exactly, atleast!, atmost!, exactly!
 "Returns the number of nodes in the BDD graph."
 @inline Base.size(α::Diagram)::Int = (n = 0; foreach(x -> n += 1, α); n)
 
+"Returns whether a variable x appears as a positive literal in α, given that α is a conjunction of literals."
+function lit_val(α::Diagram, x::Union{UInt16, UInt32, UInt64, Int32, Int64})::Bool
+  Q = Diagram[α]
+  u = abs(x)
+  # BDDs guarantee variables are top-down increasing.
+  while !isempty(Q)
+    v = pop!(Q)
+    if !is_term(v)
+      if u == v.index return (x > 0) == is_⊥(v.low) end
+      if !is_term(v.low) push!(Q, v.low) end
+      if !is_term(v.high) push!(Q, v.high) end
+    end
+  end
+  return false
+end
+export lit_val
+
+
 end # module
