@@ -1,5 +1,7 @@
 [![Build Status](https://travis-ci.com/RenatoGeh/BDD.jl.svg?branch=master)](https://travis-ci.com/RenatoGeh/BDD.jl)
 [![codecov](https://codecov.io/gh/RenatoGeh/BDD.jl/branch/master/graph/badge.svg)](https://codecov.io/gh/RenatoGeh/BDD.jl)
+[![](https://img.shields.io/badge/docs-stable-blue.svg)](https://renatogeh.github.io/BDD.jl/stable)
+[![](https://img.shields.io/badge/docs-dev-blue.svg)](https://renatogeh.github.io/BDD.jl/dev)
 
 BinaryDecisionDiagrams.jl (BDD.jl)
 ======
@@ -61,7 +63,9 @@ You create BDDs from constants and variables by composing boolean
 functions with logical operations AND (∧), OR (∨), XOR (⊻) and
 negation (¬).
 
-See `test/runtests.jl` for a comprehensive collection of examples on each feature.
+See `test/runtests.jl` for a comprehensive collection of examples on each feature. It is highly
+recommended you check the [docs](https://renatogeh.github.io/BDD.jl/stable), since the snippet
+below does not cover all features.
 
 ```julia
   import BDD: ⊤, ⊥, variable, ∧, ∨, ⊻, ¬, |
@@ -82,7 +86,7 @@ See `test/runtests.jl` for a comprehensive collection of examples on each featur
   println(¬x1)
 
   println("=== x1 ∧ x2 ===")
-  println(x1 & x2)
+  println(x1 ∧ x2)
 
   println("=== x1 ∨ x2 ===")
   println(x1 ∨ x2)
