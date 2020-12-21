@@ -867,3 +867,12 @@ end
     end
   end
 end
+
+@testset "Pretty print conjunctions" begin
+  Φ = [1∧2∧3∧4∧5, 1∧¬2∧3∧4∧¬5, 4∧¬3∧7∧¬1, 5∧4∧¬2∧¬1, ¬1∧¬5∧¬4∧¬2]
+  E = ["1 ∧ 2 ∧ 3 ∧ 4 ∧ 5", "1 ∧ ¬2 ∧ 3 ∧ 4 ∧ ¬5", "¬1 ∧ ¬3 ∧ 4 ∧ 7", "¬1 ∧ ¬2 ∧ 4 ∧ 5",
+       "¬1 ∧ ¬2 ∧ ¬4 ∧ ¬5"]
+  for (i, ϕ) ∈ enumerate(Φ)
+    @test E[i] == print_conjunction(ϕ; out = false)
+  end
+end

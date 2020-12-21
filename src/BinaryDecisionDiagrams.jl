@@ -674,5 +674,25 @@ function lit_val(α::Diagram, x::Union{UInt16, UInt32, UInt64, Int32, Int64})::B
 end
 export lit_val
 
+"Pretty print a conjunction of literals BDD."
+function print_conjunction(α::Diagram; out::Bool = true)::Union{String, Nothing}
+  s = ""
+  Q = Diagram[α]
+  while !isempty(Q)
+    v = pop!(Q)
+    if !is_term(v)
+      s *= is_⊥(v.low) ? string(v.index) : "¬$(v.index)"
+      if !is_term(v.low) push!(Q, v.low) end
+      if !is_term(v.high) push!(Q, v.high) end
+      if !isempty(Q) s *= " ∧ " end
+    end
+  end
+  if out
+    println(s)
+    return nothing
+  end
+  return s
+end
+export print_conjunction
 
 end # module
