@@ -2,6 +2,14 @@ module BinaryDecisionDiagrams
 
 nextid = 1
 
+"""A Binary Decision Diagram.
+
+- `index`: the vertex variable (-1 if terminal vertex
+- `low`: low child vertex of BDD (undef if terminal vertex)
+- `high`: high child vertex of BDD (undef if terminal vertex)
+- `value`: terminal boolean value
+- `id`: unique identifier
+"""
 mutable struct Diagram
   "Root vertex variable index (-1 if terminal vertex)."
   index::Int
@@ -157,10 +165,10 @@ export terminal
 export variable
 
 "Returns 0 if x is not a literal; else returns the literal's sign."
-@inline Base.sign(x::Diagram) = !is_lit(x) ? 0 : x.low == ⊥ ? 1 : -1
-@inline Base.signbit(x::Diagram) = sign(x) == -1
+@inline Base.sign(x::Diagram)::Int = !is_lit(x) ? 0 : x.low == ⊥ ? 1 : -1
+@inline Base.signbit(x::Diagram)::Bool = sign(x) == -1
 "Returns 0 if x is not a literal; else returns an integer representation of x."
-@inline to_int(x::Diagram) = !is_lit(x) ? 0 : x.low == ⊥ ? x.index : -x.index
+@inline to_int(x::Diagram)::Int = !is_lit(x) ? 0 : x.low == ⊥ ? x.index : -x.index
 export to_int
 
 "Return string representation of Diagram α."
@@ -286,7 +294,7 @@ function Base.deepcopy(α::Diagram)::Diagram
 end
 
 "Returns a Diagram canonical representation of α ⊕ β, where ⊕ is some binary operator."
-@inline apply(α::Diagram, β::Diagram, ⊕) = reduce!(apply_step(α, β, ⊕, Dict{Tuple{Int, Int}, Diagram}()))
+@inline apply(α::Diagram, β::Diagram, ⊕)::Diagram = reduce!(apply_step(α, β, ⊕, Dict{Tuple{Int, Int}, Diagram}()))
 export apply
 
 """Recursively computes α ⊕ β. If the result was already computed as an intermediate result, return
@@ -334,7 +342,7 @@ export restrict
 @inline Base.:|(α::Diagram, X::BitVector)::Diagram = restrict(α, X)
 @inline Base.:|(α::Diagram, x::Int)::Diagram = restrict(α, Dict{Int, Bool}(x > 0 ? x => true : -x => false))
 @inline Base.:|(α::Diagram, X::AbstractArray{Bool})::Diagram = restrict(α, X)
-"Returns the evaluation of α given an instantiation X. Returns false if X is not a full instantiation."
+
 @inline (α::Diagram)(X::Dict{Int, Bool})::Bool = is_⊤(restrict(α, X))
 @inline (α::Diagram)(X::AbstractArray{Int})::Bool = is_⊤(α|X)
 @inline (α::Diagram)(X::BitVector)::Bool = is_⊤(α|X)
@@ -457,7 +465,7 @@ struct ConvalPermutations
   V::Vector{Int}
   m::Int
 end
-@inline Base.length(P::ConvalPermutations) = P.m
+@inline Base.length(P::ConvalPermutations)::Int = P.m
 
 "Computes all possible valuations of scope V as both conjunctions and instantiation values."
 @inline convals(V::Union{Set{Int}, Vector{Int}, UnitRange{Int}}) = ConvalPermutations(sort!(collect(V)), 2^length(V))
