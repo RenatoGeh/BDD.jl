@@ -1,6 +1,6 @@
 module BinaryDecisionDiagrams
 
-nextid = 1
+nextid = Threads.Atomic{Int}(1)
 
 """A Binary Decision Diagram.
 
@@ -25,16 +25,16 @@ mutable struct Diagram
   function Diagram(v::Bool)::Diagram
     α = new()
     global nextid
-    α.index, α.value, α.id = -1, v, nextid
-    nextid = (nextid + 1) % typemax(Int)
+    α.index, α.value, α.id = -1, v, nextid[]
+    Threads.atomic_xchg!(nextid, (α.id+1) % typemax(Int))
     return α
   end
   "Constructs a variable."
   function Diagram(i::Int, low::Diagram, high::Diagram)::Diagram
     α = new()
     global nextid
-    α.index, α.low, α.high, α.id = i, low, high, nextid
-    nextid = (nextid + 1) % typemax(Int)
+    α.index, α.low, α.high, α.id = i, low, high, nextid[]
+    Threads.atomic_xchg!(nextid, (α.id+1) % typemax(Int))
     return α
   end
 end

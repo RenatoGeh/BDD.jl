@@ -876,3 +876,23 @@ end
     @test E[i] == print_conjunction(ϕ; out = false)
   end
 end
+
+@testset "Parallelism" begin
+  n = 8
+  m = 2^n
+  Φ = Vector{Diagram}(undef, m)
+  M = all_valuations(1:n)
+  E = and.(map.(x -> x[2] ? x[1] : -x[1], enumerate.(eachrow(M))))
+  Threads.@threads for i ∈ 1:m
+    Φ[i] = and(map(x -> x[2] ? x[1] : -x[1], enumerate(M[i,:])))
+  end
+  for i ∈ 1:m @test Φ[i] == E[i] end
+  Ψ = Vector{Diagram}(undef, m)
+  F = Vector{Diagram}(undef, m)
+  Threads.@threads for i ∈ 1:m
+    α = (2 ∧ ¬10 ∧ ¬11 ∧ ¬3)
+    Ψ[i] = Φ[i] ∨ α
+    F[i] = E[i] ∨ α
+  end
+  for i ∈ 1:m @test Ψ[i] == F[i] end
+end

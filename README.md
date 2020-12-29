@@ -20,7 +20,8 @@ has many more features compared to the original package, such as
 - Marginalization of a formula given some binary operator (generalization of `forget`);
 - Functions for identifying a BDD's scope and verifying a variable's membership;
 - Extracting conjunctions as bit arrays;
-- Constructors for cardinality constraint formulae (at least, at most and exactly).
+- Constructors for cardinality constraint formulae (at least, at most and exactly);
+- Thread safe.
 
 The following are references used in this package and the original library.
 
