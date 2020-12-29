@@ -172,9 +172,10 @@ export variable
 export to_int
 
 "Return string representation of Diagram α."
-function Base.string(α::Diagram)::String
+function Base.string(α::Diagram; max_depth::Int = 20)::String
   s = ""
   S = Tuple{Diagram, Int, Char}[(α, 0, '\0')]
+  d = 0
   while !isempty(S)
     v, indent, c = pop!(S)
     for i ∈ 1:indent s *= "|  " end
@@ -185,6 +186,11 @@ function Base.string(α::Diagram)::String
       s *= " (index=$(v.index), id=$(v.id))\n"
       push!(S, (v.high, indent + 1, '+'))
       push!(S, (v.low, indent + 1, '-'))
+    end
+    d += 1
+    if d > max_depth
+      s *= "...\nOmitting some nodes. BDD is too large."
+      break
     end
   end
   return s
