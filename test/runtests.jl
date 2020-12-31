@@ -200,6 +200,34 @@ end
   @test f5|[-1, 2] == ⊤
   @test f5|[1, -2] == ⊥
   @test f5|[-1, -2] == ⊥
+
+  Φ = [(1 ∧ ¬2) ∨ (2 ∧ 3), (1 ∨ ¬2) ∧ (2 ∨ 3), 1 ∧ ¬2 ∨ ((3 ∧ 2) ∨ (5 ∧ ¬4)),
+       (1 ∧ 3 ∧ 2) ∨ (1 ∧ ¬3 ∧ 2) ∨ (1 ∧ ¬ 2 ∧ 3)]
+  for ϕ ∈ Φ
+    S = scope(ϕ)
+    for i ∈ 1:2^length(S)
+      shuffle!(S)
+      α, β, γ, δ = copy(ϕ), copy(ϕ), copy(ϕ), copy(ϕ)
+      for x ∈ S
+        α, β = α|x, β|-x
+        @test α == γ|x
+        @test β == δ|-x
+        γ, δ = copy(α), copy(β)
+      end
+    end
+  end
+
+  for i ∈ 1:1000
+    for ϕ ∈ Φ
+      X = map(x -> rand(Bool) ? x : -x, randsubseq(scope(ϕ), 0.5))
+      α, β = copy(ϕ), copy(ϕ)
+      for x ∈ X
+        α = α|x
+        @test α == β|x
+        β = copy(α)
+      end
+    end
+  end
 end
 
 @testset "Evaluation" begin

@@ -56,7 +56,7 @@ function Base.hash(α::Diagram, h::UInt)::UInt
 end
 
 "Returns whether this Diagram node is terminal."
-@inline is_term(α::Diagram)::Bool = !isdefined(α, :low) && !isdefined(α, :high)
+@inline is_term(α::Diagram)::Bool = (α.index < 0) || (!isdefined(α, :low) && !isdefined(α, :high))
 export is_term
 
 "Returns whether the given Diagram node represents a ⊤."
@@ -336,75 +336,75 @@ function apply_step(α::Diagram, β::Diagram, ⊕, T::Dict{Tuple{Int, Int}, Diag
   return r
 end
 
+@inline function vec_to_dict(X::AbstractArray{Int})::Dict{Int, Bool}
+  D = Dict{Int, Bool}()
+  for x ∈ X if x < 0 D[-x] = false else D[x] = true end end
+  return D
+end
+
 "Returns a new reduced Diagram restricted to instantiation X."
-@inline restrict(α::Diagram, X::Dict{Int, Bool})::Diagram = reduce!(restrict_step(α, X))
-@inline restrict(α::Diagram, X::AbstractArray{Int})::Diagram = reduce!(restrict_step(α, X))
-@inline restrict(α::Diagram, X::BitVector)::Diagram = reduce!(restrict_step(α, X))
-@inline restrict(α::Diagram, X::AbstractArray{Bool})::Diagram = reduce!(restrict_step(α, X))
+@inline restrict(α::Diagram, X::Dict{Int, Bool})::Diagram = reduce!(restrict_step(α, X, Dict{Int, Diagram}()))
+@inline restrict(α::Diagram, X::AbstractArray{Int})::Diagram = reduce!(restrict_step(α, vec_to_dict(X), Dict{Int, Diagram}()))
+@inline restrict(α::Diagram, X::Union{AbstractArray{Bool}, BitVector})::Diagram = reduce!(restrict_step(α, X, Dict{Int, Diagram}()))
+@inline restrict(α::Diagram, x::Int)::Diagram = reduce!(restrict_step(α, abs(x), x > 0, Dict{Int, Diagram}()))
 export restrict
+
 "Returns a new reduced Diagram restricted to instantiation X."
 @inline Base.:|(α::Diagram, X::Dict{Int, Bool})::Diagram = restrict(α, X)
 @inline Base.:|(α::Diagram, X::AbstractArray{Int})::Diagram = restrict(α, X)
-@inline Base.:|(α::Diagram, X::BitVector)::Diagram = restrict(α, X)
-@inline Base.:|(α::Diagram, x::Int)::Diagram = restrict(α, Dict{Int, Bool}(x > 0 ? x => true : -x => false))
-@inline Base.:|(α::Diagram, X::AbstractArray{Bool})::Diagram = restrict(α, X)
+@inline Base.:|(α::Diagram, x::Int)::Diagram = restrict(α, x)
+@inline Base.:|(α::Diagram, X::Union{AbstractArray{Bool}, BitVector})::Diagram = restrict(α, X)
 
 @inline (α::Diagram)(X::Dict{Int, Bool})::Bool = is_⊤(restrict(α, X))
 @inline (α::Diagram)(X::AbstractArray{Int})::Bool = is_⊤(α|X)
-@inline (α::Diagram)(X::BitVector)::Bool = is_⊤(α|X)
+@inline (α::Diagram)(X::Union{AbstractArray{Bool}, BitVector})::Bool = is_⊤(α|X)
 @inline (α::Diagram)(x::Int)::Bool = is_⊤(α|x)
-@inline (α::Diagram)(X::AbstractArray{Bool})::Bool = is_⊤(α|X)
 
 "Returns a new Diagram restricted to instantiation X."
-function restrict_step(α::Diagram, X::Dict{Int, Bool})::Diagram
-  if is_term(α) return copy(α) end
+function restrict_step(α::Diagram, X::Dict{Int, Bool}, V::Dict{Int, Diagram})::Diagram
+  if haskey(V, α.id) return V[α.id]
+  elseif is_term(α) return copy(α) end
   x = α.index
   if !haskey(X, x)
-    l = restrict_step(α.low, X)
-    h = restrict_step(α.high, X)
-    return Diagram(x, l, h)
+    l = restrict_step(α.low, X, V)
+    h = restrict_step(α.high, X, V)
+    β = Diagram(x, l, h)
+    V[α.id] = β
+    return β
   end
-  if X[x] return restrict_step(α.high, X) end
-  return restrict_step(α.low, X)
+  if X[x] return restrict_step(α.high, X, V) end
+  return restrict_step(α.low, X, V)
 end
 
 "Returns a new Diagram restricted to instantiation X."
-function restrict_step(α::Diagram, X::AbstractArray{Int})::Diagram
-  if is_term(α) return copy(α) end
+function restrict_step(α::Diagram, X::Union{BitVector, AbstractArray{Bool}}, V::Dict{Int, Diagram})::Diagram
+  if haskey(V, α.id) return V[α.id]
+  elseif is_term(α) return copy(α) end
   x = α.index
   if x > length(X)
-    l = restrict_step(α.low, X)
-    h = restrict_step(α.high, X)
-    return Diagram(x, l, h)
+    l = restrict_step(α.low, X, V)
+    h = restrict_step(α.high, X, V)
+    β = Diagram(x, l, h)
+    V[α.id] = β
+    return β
   end
-  if X[x] > 0 return restrict_step(α.high, X) end
-  return restrict_step(α.low, X)
+  if X[x] return restrict_step(α.high, X, V) end
+  return restrict_step(α.low, X, V)
 end
 
-"Returns a new Diagram restricted to instantiation X."
-function restrict_step(α::Diagram, X::BitVector)::Diagram
-  if is_term(α) return copy(α) end
+function restrict_step(α::Diagram, v::Int, y::Bool, V::Dict{Int, Diagram})::Diagram
+  if haskey(V, α.id) return V[α.id]
+  elseif is_term(α) return copy(α) end
   x = α.index
-  if x > length(X)
-    l = restrict_step(α.low, X)
-    h = restrict_step(α.high, X)
-    return Diagram(x, l, h)
+  if x != v
+    l = restrict_step(α.low, v, y, V)
+    h = restrict_step(α.high, v, y, V)
+    β = Diagram(x, l, h)
+    V[α.id] = β
+    return β
   end
-  if X[x] return restrict_step(α.high, X) end
-  return restrict_step(α.low, X)
-end
-
-"Returns a new Diagram restricted to instantiation X."
-function restrict_step(α::Diagram, X::AbstractArray{Bool})::Diagram
-  if is_term(α) return copy(α) end
-  x = α.index
-  if x > length(X)
-    l = restrict_step(α.low, X)
-    h = restrict_step(α.high, X)
-    return Diagram(x, l, h)
-  end
-  if X[x] return restrict_step(α.high, X) end
-  return restrict_step(α.low, X)
+  if y return restrict_step(α.high, v, y, V) end
+  return restrict_step(α.low, v, y, V)
 end
 
 struct Permutations
