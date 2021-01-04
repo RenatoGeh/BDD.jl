@@ -23,7 +23,8 @@ has many more features compared to the original package, such as
 - Constructors for cardinality constraint formulae (at least, at most and exactly);
 - Thread safe;
 - I/O functions for saving and loading BDDs;
-- Convert BDDs to CNF and DNF file formats.
+- Convert BDDs to CNF and DNF file formats;
+- Print BDD as a CNF or DNF.
 
 The following are references used in this package and the original library.
 
@@ -46,7 +47,7 @@ This package is available on the Julia General Registries.
   $ julia -e 'using Pkg; Pkg.add("BinaryDecisionDiagrams")'
 ```
 
-Alternatively, you may add this repository manualy.
+Alternatively, you may add this repository manualy and receive nightly updates.
 
 ```bash
   $ julia -e 'using Pkg; Pkg.add("https://github.com/RenatoGeh/BDD.jl")'
@@ -71,8 +72,7 @@ recommended you check the [docs](https://renatogeh.github.io/BDD.jl/stable), sin
 below does not cover all features.
 
 ```julia
-  import BDD: ⊤, ⊥, variable, ∧, ∨, ⊻, ¬, |
-  # For preserving namespace, use 'using BDD' instead.
+  using BinaryDecisionDiagrams
 
   println("== True ==")
   println(⊤)
