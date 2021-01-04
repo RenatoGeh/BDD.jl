@@ -735,11 +735,62 @@ function print_conjunction(α::Diagram; out::Bool = true)::Union{String, Nothing
   end
   if out
     println(s)
-    return nothing
+    return
   end
   return s
 end
 export print_conjunction
+
+"""Pretty print BDD as a normal form (CNF or DNF).
+
+Caution: may exponentially explode.
+
+Alternatively, pretty prints using the given glyphs (default `∧`, `∨` and `¬`).
+
+```@example
+ϕ = (1 ∧ ¬2) ∨ (2 ∧ 3)
+print_nf(α)
+```
+
+```@example
+ϕ = (1 ∧ ¬2) ∨ (2 ∧ 3)
+print_nf(α; which = "dnf", glyphs = ['+', '*', '-'])
+```
+"""
+function print_nf(α::Diagram; out::Bool = true, which = "cnf", glyphs = nothing)::Union{String, Nothing}
+  @assert which == "cnf" || which == "dnf" "BDD.print_nf: Pretty prints only as 'cnf' or 'dnf'."
+  if isnothing(glyphs)
+    and_glyph, or_glyph, neg_glyph = '∧', '∨', '¬'
+  else
+    and_glyph, or_glyph, neg_glyph = glyphs[1], glyphs[2], glyphs[3]
+  end
+  if which == "cnf"
+    outer_glyph, inner_glyph, neg_glyph = and_glyph, or_glyph, neg_glyph
+  else
+    outer_glyph, inner_glyph, neg_glyph = or_glyph, and_glyph, neg_glyph
+  end
+  s = ""
+  C = normal_form(α, which == "dnf")
+  m = length(C)
+  for (j, c) ∈ enumerate(C)
+    n = length(c)
+    s *= '('
+    for (i, x) ∈ enumerate(c)
+      if i == n
+        s *= x > 0 ? string(x) : "$neg_glyph$(-x)"
+      else
+        s *= x > 0 ? "$x $inner_glyph " : "$neg_glyph$(-x) $inner_glyph "
+      end
+    end
+    s *= j == m ? ')' : ") $outer_glyph "
+  end
+  if out
+    println(s)
+    return
+  end
+  return s
+end
+export print_nf
 
 "Computes a mapping of the parents of each node."
 function map_parents(α::Diagram)::Dict{Diagram, Vector{Tuple{Diagram, Bool}}}
