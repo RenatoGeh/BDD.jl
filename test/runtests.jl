@@ -958,3 +958,76 @@ end
             end, T[3:end])
   end
 end
+
+@testset "Load and save CNF" begin
+  Φ = [(1 ∨ 2) ∧ (3 ∨ 4), (1 ∨ ¬2) ∧ (¬3 ∨ 4), and(collect(1:5)), or(collect(1:5)),
+       (1 ∨ ¬2) ∧ (3 ∨ ¬4) ∧ (3 ∨ 5) ∧ (4 ∨ ¬5), atmost(5, collect(1:10)),
+       atleast(5, collect(1:10)), exactly(5, collect(1:10))]
+  for (i, ϕ) ∈ enumerate(Φ)
+    f = tempname() * ".cnf"
+    save(ϕ, f)
+    α, c, n_c = ⊤, 0, -1
+    open(f, "r") do input
+      for (j, line) ∈ enumerate(eachline(input))
+        l = lstrip(line)
+        if l[1] == 'c' continue end
+        if l[1] == 'p'
+          n, m = map(x -> parse(Int, x), split(l[6:end]))
+          @test n == length(scopeset(ϕ))
+          n_c = m
+          continue
+        end
+        c += 1
+        α = α ∧ reduce(∨, BitSet(map(x -> parse(Int, x), split(l[begin:end-1]))))
+      end
+    end
+    @test α == ϕ
+    @test n_c > 0
+    @test c == n_c
+    β = load(f)
+    @test β == ϕ
+  end
+end
+
+@testset "Load and save DNF" begin
+  Φ = [(1 ∧ 2) ∨ (3 ∧ 4), (1 ∧ ¬2) ∨ (¬3 ∧ 4), and(collect(1:5)), or(collect(1:5)),
+       (1 ∧ ¬2) ∨ (3 ∧ ¬4) ∨ (3 ∧ 5) ∨ (4 ∧ ¬5), atmost(5, collect(1:10)),
+       atleast(5, collect(1:10)), exactly(5, collect(1:10))]
+  for (i, ϕ) ∈ enumerate(Φ)
+    f = tempname() * ".dnf"
+    save(ϕ, f)
+    α, c, n_c = ⊥, 0, -1
+    open(f, "r") do input
+      for (j, line) ∈ enumerate(eachline(input))
+        l = lstrip(line)
+        if l[1] == 'c' continue end
+        if l[1] == 'p'
+          n, m = map(x -> parse(Int, x), split(l[6:end]))
+          @test n == length(scopeset(ϕ))
+          n_c = m
+          continue
+        end
+        c += 1
+        α = α ∨ reduce(∧, BitSet(map(x -> parse(Int, x), split(l[begin:end-1]))))
+      end
+    end
+    @test α == ϕ
+    @test n_c > 0
+    @test c == n_c
+    β = load(f)
+    @test β == ϕ
+  end
+end
+
+@testset "Save and load BDD" begin
+  Φ = [(1 ∨ 2) ∧ (3 ∨ 4), (1 ∨ ¬2) ∧ (¬3 ∨ 4), and(collect(1:5)), or(collect(1:5)),
+       (1 ∨ ¬2) ∧ (3 ∨ ¬4) ∧ (3 ∨ 5) ∧ (4 ∨ ¬5), atmost(5, collect(1:10)),
+       atleast(5, collect(1:10)), exactly(5, collect(1:10)), (1 ∧ 2) ∨ (3 ∧ 4),
+       (1 ∧ ¬2) ∨ (¬3 ∧ 4), (1 ∧ ¬2) ∨ (3 ∧ ¬4) ∨ (3 ∧ 5) ∨ (4 ∧ ¬5)]
+  for (i, ϕ) ∈ enumerate(Φ)
+    f = tempname() * ".bdd"
+    save(ϕ, f)
+    α = load(f)
+    @test ϕ == α
+  end
+end

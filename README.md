@@ -21,7 +21,9 @@ has many more features compared to the original package, such as
 - Functions for identifying a BDD's scope and verifying a variable's membership;
 - Extracting conjunctions as bit arrays;
 - Constructors for cardinality constraint formulae (at least, at most and exactly);
-- Thread safe.
+- Thread safe;
+- I/O functions for saving and loading BDDs;
+- Convert BDDs to CNF and DNF file formats.
 
 The following are references used in this package and the original library.
 

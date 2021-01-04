@@ -741,4 +741,189 @@ function print_conjunction(α::Diagram; out::Bool = true)::Union{String, Nothing
 end
 export print_conjunction
 
+"Computes a mapping of the parents of each node."
+function map_parents(α::Diagram)::Dict{Diagram, Vector{Tuple{Diagram, Bool}}}
+  Pa = Dict{Diagram, Vector{Tuple{Diagram, Bool}}}(α => Vector{Tuple{Diagram, Bool}}())
+  V = BitSet()
+  Q = Diagram[α]
+  while !isempty(Q)
+    v = popfirst!(Q)
+    if !is_term(v)
+      l, h = v.low, v.high
+      p, q = l.id, h.id
+      if q ∉ V Pa[h] = Vector{Tuple{Diagram, Bool}}(); push!(Q, h); push!(V, q) end
+      if p ∉ V Pa[l] = Vector{Tuple{Diagram, Bool}}(); push!(Q, l); push!(V, p) end
+      push!(Pa[h], (v, true))
+      push!(Pa[l], (v, false))
+    end
+  end
+  return Pa
+end
+
+"""Runs a BFS on the mapping of parents, starting from either a ⊤ (true) or ⊥ (false) in order to
+find the corresponding CNF or DNF encoding."""
+function normal_form(α::Diagram, which::Bool)::Vector{Vector{Int}}
+  # Which: DNF = true; CNF = false.
+  clauses = Vector{Vector{Int}}()
+  normal_form_step(which ? ⊤ : ⊥, map_parents(α), clauses, Vector{Int}(), which)
+  return clauses
+end
+
+function normal_form_step(α::Diagram, Pa::Dict{Diagram, Vector{Tuple{Diagram, Bool}}},
+                              all::Vector{Vector{Int}}, path::Vector{Int}, which::Bool)
+  pa = Pa[α]
+  for (p, e) ∈ pa
+    root = isempty(Pa[p])
+    x = which == e ? p.index : -p.index
+    P = push!(copy(path), x)
+    if root push!(all, P)
+    else normal_form_step(p, Pa, all, P, which) end
+  end
+  nothing
+end
+
+"Save as CNF. Use the `save` function instead."
+function save_cnf(α::Diagram, filename::String; kwargs...)
+  S = scopeset(α)
+  open(filename, "w"; kwargs...) do out
+    write(out, "c CNF file format. See https://people.sc.fsu.edu/~jburkardt/data/cnf/cnf.html.\n")
+    cnf = normal_form(α, false)
+    write(out, "p cnf $(length(S)) $(length(cnf))\n")
+    for C ∈ cnf
+      clause = ""
+      for x ∈ C
+        clause *= "$x "
+      end
+      clause *= "0\n"
+      write(out, clause)
+    end
+  end
+  nothing
+end
+
+"Save as DNF. Use the `save` function instead."
+function save_dnf(α::Diagram, filename::String; kwargs...)
+  S = scopeset(α)
+  open(filename, "w"; kwargs...) do out
+    write(out, "c DNF file format. See http://gauss.ececs.uc.edu/sbsat_user_manual/node58.html.\n")
+    dnf = normal_form(α, true)
+    write(out, "p dnf $(length(S)) $(length(dnf))\n")
+    for C ∈ dnf
+      clause = ""
+      for x ∈ C
+        clause *= "$x "
+      end
+      clause *= "0\n"
+      write(out, clause)
+    end
+  end
+  nothing
+end
+
+"Save as BDD. Use the `save` function instead."
+function save_bdd(α::Diagram, filename::String; kwargs...)
+  open(filename, "w"; kwargs...) do out
+    write(out, "c BDD file format. See https://www.ime.usp.br/~renatolg/bdd/bdd.html.\n")
+    foreach(function(ϕ::Diagram)
+              if is_term(ϕ)
+                write(out, "1 $(ϕ.id) $(ϕ.value ? 1 : 0)\n")
+              else
+                write(out, "0 $(ϕ.id) $(ϕ.index) $(ϕ.low.id) $(ϕ.high.id)\n")
+              end
+            end, postorder(α))
+  end
+  nothing
+end
+
+"""Saves a BDD as a file.
+
+Supported file formats:
+ - CNF (`.cnf`);
+ - DNF (`.dnf`);
+ - BDD (`.bdd`).
+
+To save as any of these file formats, simply set the filename with the desired extension.
+
+Keyword arguments are passed down to the `open` function.
+"""
+function save(α::Diagram, filename::String; kwargs...)
+  @assert length(filename) > 4 "BDD.save: Filename must contain name and valid extension!"
+  funcs = Dict{String, Function}(".cnf" => save_cnf, ".dnf" => save_dnf, ".bdd" => save_bdd)
+  ext = filename[end-3:end]
+  @assert haskey(funcs, ext) "BDD.save: Not a valid extension!"
+  funcs[ext](α, filename; kwargs...)
+  nothing
+end
+export save
+
+"Loads a CNF as a BDD. Use `load` instead."
+function load_cnf(filename::String; kwargs...)::Diagram
+  ϕ = ⊤
+  open(filename, "r"; kwargs...) do input
+    for line ∈ eachline(input)
+      l = lstrip(line)
+      if l[1] == 'c' || l[1] == 'p' continue end
+      C = reduce(∨, map(x -> parse(Int, x), split(l[begin:end-1])))
+      ϕ = ϕ ∧ C
+    end
+  end
+  return ϕ
+end
+
+"Loads a CNF as a BDD. Use `load` instead."
+function load_dnf(filename::String; kwargs...)::Diagram
+  ϕ = ⊥
+  open(filename, "r"; kwargs...) do input
+    for line ∈ eachline(input)
+      l = lstrip(line)
+      if l[1] == 'c' || l[1] == 'p' continue end
+      C = reduce(∧, map(x -> parse(Int, x), split(l[begin:end-1])))
+      ϕ = ϕ ∨ C
+    end
+  end
+  return ϕ
+end
+
+"Loads a BDD from a file. Use `load` instead."
+function load_bdd(filename::String; kwargs...)::Diagram
+  N = Dict{Int, Diagram}()
+  r = -1
+  open(filename, "r"; kwargs...) do input
+    for line ∈ eachline(input)
+      l = lstrip(line)
+      if l[1] == 'c' continue end
+      P = map(x -> parse(Int, x), split(l))
+      if first(P) == 1
+        id, value = P[2], P[3]
+        if !haskey(N, id) N[id] = Diagram(value == 1) end
+      else
+        id, index, l_id, h_id = P[2], P[3], P[4], P[5]
+        if !haskey(N, id) N[id] = Diagram(index, id, N[l_id], N[h_id]) end
+        r = id
+      end
+    end
+  end
+  return N[r]
+end
+
+"""Loads a BDD from given file.
+
+Supported file formats:
+ - CNF (`.cnf`);
+ - DNF (`.dnf`);
+ - BDD (`.bdd`).
+
+To load as any of these file formats, simply set the filename with the desired extension.
+
+Keyword arguments are passed down to the `open` function.
+"""
+function load(filename::String; kwargs...)::Diagram
+  @assert length(filename) > 4 "BDD.save: Filename must contain name and valid extension!"
+  funcs = Dict{String, Function}(".cnf" => load_cnf, ".dnf" => load_dnf, ".bdd" => load_bdd)
+  ext = filename[end-3:end]
+  @assert haskey(funcs, ext) "BDD.save: Not a valid extension!"
+  return funcs[ext](filename; kwargs...)
+end
+export load
+
 end # module
