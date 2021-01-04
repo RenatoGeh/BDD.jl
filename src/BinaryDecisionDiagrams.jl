@@ -37,6 +37,12 @@ mutable struct Diagram
     Threads.atomic_xchg!(nextid, (α.id+1) % typemax(Int))
     return α
   end
+  "Forcefuly construct a node with given parameters. Should not be used."
+  function Diagram(i::Int, id::Int, low::Diagram, high::Diagram)::Diagram
+    α = new()
+    α.index, α.low, α.high, α.id = i, low, high, id
+    return α
+  end
 end
 export Diagram
 
@@ -247,6 +253,32 @@ function Base.collect(α::Diagram)::Vector{Diagram}
     push!(C, v)
   end
   return C
+end
+
+"Returns a `Vector{Diagram}` containing all nodes in `α` in post-order."
+@inline function postorder(α::Diagram)::Vector{Diagram}
+  O = Vector{Diagram}()
+  postorder_step(α, Set{UInt64}(), O)
+  return O
+end
+export postorder
+
+function postorder_step(α::Diagram, V::Set{UInt64}, O::Vector{Diagram})
+  push!(V, objectid(α))
+  if !is_term(α)
+    l, h = α.low, α.high
+    p, q = objectid(l), objectid(h)
+    if p ∉ V
+      push!(V, p)
+      postorder_step(l, V, O)
+    end
+    if q ∉ V
+      push!(V, q)
+      postorder_step(h, V, O)
+    end
+  end
+  push!(O, α)
+  nothing
 end
 
 """Reduce a Diagram rooted at α inplace, removing duplicate nodes and redundant sub-trees. Returns

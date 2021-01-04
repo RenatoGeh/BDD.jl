@@ -110,6 +110,12 @@ end
   end
 end
 
+@testset "Forced construction" begin
+  for i ∈ 3:100
+    @test Diagram(1, i, ⊥, ⊤).id == i
+  end
+end
+
 @testset "Reduce" begin
   @test reduce!(⊤) == ⊤
   @test reduce!(⊥) == ⊥
@@ -923,4 +929,32 @@ end
     F[i] = E[i] ∨ α
   end
   for i ∈ 1:m @test Ψ[i] == F[i] end
+end
+
+@testset "Post-order" begin
+  Φ = [1∧2∧3∧4∧5, 1∧¬2∧3∧4∧¬5, 4∧¬3∧7∧¬1, 5∧4∧¬2∧¬1, ¬1∧¬5∧¬4∧¬2, ⊤, ⊥, variable(1), variable(-1),
+       1 ∧ 2, 1 ∨ ¬2, 1 ∧ 2 ∧ (3 ∨ 4), (1 ∨ ¬2) ∧ (¬3 ∨ 4),
+       (1 ∧ 2) ∨ (¬2 ∧ 3) ∨ (¬3 ∧ 4), (1 ∧ 3 ∧ 5) ∨ (7 ∧ 9), 2 ∨ 4 ∨ 6 ∨ 8, 1 ∧ 2 ∨ 3 ∧ 6 ∨ 7 ∧ 8,
+       (1 ∧ 5) ∨ (¬1 ∧ ¬5) ∨ (5 ∧ 8) ∨ (¬8 ∧ 1), and(collect(1:10))]
+  for ϕ ∈ Φ
+    T = postorder(ϕ)
+    if is_term(ϕ)
+      @test length(T) == 1
+      @test first(T) == ϕ
+      continue
+    end
+    V = Set{UInt64}()
+    @test is_⊥(T[1]) || is_⊤(T[1])
+    @test is_⊥(T[2]) || is_⊤(T[2])
+    @test T[1] != T[2]
+    push!(V, objectid(T[1]))
+    push!(V, objectid(T[2]))
+    foreach(function(α::Diagram)
+              o = objectid(α)
+              @test o ∉ V
+              @test objectid(α.low) ∈ V
+              @test objectid(α.high) ∈ V
+              push!(V, o)
+            end, T[3:end])
+  end
 end
