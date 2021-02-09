@@ -562,15 +562,28 @@ export shannon, shannon!
 
 "Eliminate a variable through disjunction. Equivalent to the expression (ϕ|x ∨ ϕ|¬x)."
 @inline eliminate(α::Diagram, v::Int)::Diagram = reduce!(eliminate_step(α, v))
-export eliminate
 function eliminate_step(α::Diagram, v::Int)::Diagram
   if is_term(α) return copy(α) end
   if α.index == v return α.low ∨ α.high end
   # If idempotent (which is the case), then recursion suffices.
-  l = eliminate(α.low, v)
-  h = eliminate(α.high, v)
+  l = eliminate_step(α.low, v)
+  h = eliminate_step(α.high, v)
   return Diagram(α.index, l, h)
 end
+@inline eliminate(α::Diagram, V::Union{BitSet, Vector{UInt32}, Vector{UInt64}, Vector{Int32}, Vector{Int64}})::Diagram = reduce!(eliminate_step(α, V))
+function eliminate_step(α::Diagram, V::Union{BitSet, Vector{UInt32}, Vector{UInt64}, Vector{Int32}, Vector{Int64}})::Diagram
+  if is_term(α) return copy(α) end
+  if α.index ∈ V return eliminate_step(α.low ∨ α.high, V) end
+  l = eliminate_step(α.low, V)
+  h = eliminate_step(α.high, V)
+  return Diagram(α.index, l, h)
+end
+export eliminate
+
+"Returns the resulting BDD after applying the `forget` operation. Equivalent to \$\\phi|_x \\vee \\phi|_{\\neg x}\$."
+@inline forget(α::Diagram, x::Union{UInt32, UInt64, Int32, Int64})::Diagram = eliminate(α, x)
+@inline forget(α::Diagram, X::Union{BitSet, Vector{UInt32}, Vector{UInt64}, Vector{Int32}, Vector{Int64}}) = eliminate(α, X)
+export forget
 
 "Marginalize a variable through some binary operation."
 @inline marginalize(α::Diagram, v::Int, ⊕)::Diagram = is_term(α) ? Diagram(α.value ⊕ α.value) : reduce!(marginalize_step(α, v, ⊕))
@@ -706,16 +719,6 @@ end
 "Constructs a BDD mapping to true if exactly n literals in L are in the input; otherwise false."
 @inline exactly(n::Int, L::Vector{Int})::Diagram = exactly!(n, copy(L))
 export atleast, atmost, exactly, atleast!, atmost!, exactly!
-
-"Returns the resulting BDD after applying the `forget` operation. Equivalent to \$\\phi|_x \\vee \\phi|_{\\neg x}\$."
-@inline forget(α::Diagram, x::Int)::Diagram = reduce!(forget_step(α, x))
-function forget_step(α::Diagram, x::Int)::Diagram
-  if is_term(α) return copy(α) end
-  if α.index > x return α end
-  if α.index < x return Diagram(α.index, forget(α.low, x), forget(α.high, x)) end
-  return α.low ∨ α.high
-end
-export forget
 
 "Returns the number of nodes in the BDD graph."
 @inline Base.size(α::Diagram)::Int = (n = 0; foreach(x -> n += 1, α); n)

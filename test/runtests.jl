@@ -736,12 +736,18 @@ end
       @test eliminate(ϕ, x) == (f ∨ g)
     end
     α = ϕ
+    rem = Int[]
+    rem_set = BitSet()
     while !isempty(sc)
       x = pop!(sc)
       f, g = α|x, α|-x
       β = eliminate(α, x)
       @test β == (f ∨ g)
       α = β
+      push!(rem, x)
+      push!(rem_set, x)
+      @test eliminate(ϕ, rem) == α
+      @test eliminate(ϕ, rem_set) == α
     end
   end
 end
