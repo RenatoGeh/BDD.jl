@@ -721,6 +721,29 @@ end
   elimtest((1 ∨ ¬2) ∧ (¬3 ∨ ¬4), 1:6)
   elimtest((1 ∨ 2 ∧ ¬3) ∧ 2 ∨ (¬4 ∧ ¬5 ∨ 6) ∧ (1 ∨ ¬2), 1:8)
   elimtest(2 ∧ (2 ∨ ¬3) ∧ (¬3 ∨ ¬4), 1:4)
+
+  @test eliminate(⊤, 1) == ⊤
+  @test eliminate(⊥, 1) == ⊥
+
+  Φ = [(1 ∨ 2) ∧ (3 ∨ 4), (1 ∨ ¬2) ∧ (¬3 ∨ 4), and(collect(1:5)), or(collect(1:5)),
+       (1 ∨ ¬2) ∧ (3 ∨ ¬4) ∧ (3 ∨ 5) ∧ (4 ∨ ¬5), atmost(5, collect(1:10)),
+       atleast(5, collect(1:10)), exactly(5, collect(1:10)), (1 ∧ 2) ∨ (3 ∧ 4),
+       (1 ∧ ¬2) ∨ (¬3 ∧ 4), (1 ∧ ¬2) ∨ (3 ∧ ¬4) ∨ (3 ∧ 5) ∨ (4 ∧ ¬5)]
+  for (i, ϕ) ∈ enumerate(Φ)
+    sc = scope(ϕ)
+    for x ∈ sc
+      f, g = ϕ|x, ϕ|-x
+      @test eliminate(ϕ, x) == (f ∨ g)
+    end
+    α = ϕ
+    while !isempty(sc)
+      x = pop!(sc)
+      f, g = α|x, α|-x
+      β = eliminate(α, x)
+      @test β == (f ∨ g)
+      α = β
+    end
+  end
 end
 
 @testset "Marginalization" begin

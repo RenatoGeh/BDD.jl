@@ -713,7 +713,7 @@ function forget_step(α::Diagram, x::Int)::Diagram
   if is_term(α) return copy(α) end
   if α.index > x return α end
   if α.index < x return Diagram(α.index, forget(α.low, x), forget(α.high, x)) end
-  return apply_step(α.low, α.high, |, Dict{Tuple{Int, Int}, Diagram}())
+  return α.low ∨ α.high
 end
 export forget
 
