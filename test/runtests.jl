@@ -561,6 +561,22 @@ end
   @test ¬(1 ⊻ (¬2 ∨ 3) ⊻ ¬(3 ∧ 2)) ∧ (3 ∧ ¬2) == ¬(x1 ⊻ (¬x2 ∨ x3) ⊻ ¬(x3 ∧ x2)) ∧ (x3 ∧ ¬x2)
 end
 
+@testset "Implication" begin
+  @test (false → false) == true
+  @test (false → true) == true
+  @test (true → false) == false
+  @test (true → true) == true
+
+  for i ∈ 1:100
+    @test (i → (i+1)) == ((¬i) ∨ (i+1))
+    @test (variable(i) → variable(i+1)) == ((¬i) ∨ (i+1))
+  end
+
+  α = (1 ∨ ¬2) ∧ (¬3 ∨ 4) ∧ (¬2 ∨ ¬4)
+  β = (5 ∧ 1) ∨ (¬3 ∧ 2) ∨ (¬1 ∧ 4)
+  @test (α → β) == ((¬α) ∨ β)
+end
+
 @testset "Equality and inequality" begin
   @test isequal(⊥, ⊥)
   @test isequal(⊤, ⊤)
@@ -1024,10 +1040,32 @@ end
        (1 ∨ ¬2) ∧ (3 ∨ ¬4) ∧ (3 ∨ 5) ∧ (4 ∨ ¬5), atmost(5, collect(1:10)),
        atleast(5, collect(1:10)), exactly(5, collect(1:10)), (1 ∧ 2) ∨ (3 ∧ 4),
        (1 ∧ ¬2) ∨ (¬3 ∧ 4), (1 ∧ ¬2) ∨ (3 ∧ ¬4) ∨ (3 ∧ 5) ∨ (4 ∧ ¬5)]
-  for (i, ϕ) ∈ enumerate(Φ)
+  for ϕ ∈ Φ
     f = tempname() * ".bdd"
     save(ϕ, f)
     α = load(f)
     @test ϕ == α
+  end
+end
+
+@testset "Forget" begin
+  Φ = [(1 ∨ 2) ∧ (3 ∨ 4), (1 ∨ ¬2) ∧ (¬3 ∨ 4), and(collect(1:5)), or(collect(1:5)),
+       (1 ∨ ¬2) ∧ (3 ∨ ¬4) ∧ (3 ∨ 5) ∧ (4 ∨ ¬5), atmost(5, collect(1:10)),
+       atleast(5, collect(1:10)), exactly(5, collect(1:10)), (1 ∧ 2) ∨ (3 ∧ 4),
+       (1 ∧ ¬2) ∨ (¬3 ∧ 4), (1 ∧ ¬2) ∨ (3 ∧ ¬4) ∨ (3 ∧ 5) ∨ (4 ∧ ¬5)]
+  for (i, ϕ) ∈ enumerate(Φ)
+    sc = scope(ϕ)
+    for x ∈ sc
+      f, g = ϕ|x, ϕ|-x
+      @test forget(ϕ, x) == (f ∨ g)
+    end
+    α = ϕ
+    while !isempty(sc)
+      x = pop!(sc)
+      f, g = α|x, α|-x
+      β = forget(α, x)
+      @test β == (f ∨ g)
+      α = β
+    end
   end
 end

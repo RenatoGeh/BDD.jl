@@ -149,6 +149,13 @@ export or
 @inline Base.:⊻(α::Diagram, x::Int)::Diagram = apply(α, variable(x), ⊻)
 @inline Base.:⊻(x::Int, y::Int)::Diagram = apply(variable(x), variable(y), ⊻)
 
+@inline (→)(α::Diagram, β::Diagram)::Diagram = (¬α) ∨ β
+@inline (→)(x::Int, β::Diagram)::Diagram = (¬x) ∨ β
+@inline (→)(α::Diagram, x::Int)::Diagram = (¬α) ∨ x
+@inline (→)(x::Int, y::Int)::Diagram = (¬x) ∨ y
+@inline (→)(x::Bool, y::Bool)::Bool = (!x) | y
+export →
+
 "Returns whether the two given boolean functions are equivalent."
 @inline Base.:(==)(α::Diagram, β::Diagram)::Bool = is_⊤(apply(α, β, ==))
 @inline Base.:(==)(x::Int, β::Diagram)::Bool = is_var(β) && β.index == x && ((x > 0 && β.low == ⊥ && β.high == ⊤) || (x < 0 && β.low == ⊤ && β.high == ⊥))
@@ -201,7 +208,7 @@ function Base.string(α::Diagram; max_depth::Int = 20)::String
   end
   return s
 end
-Base.show(io::Core.IO, α::Diagram) = show(io, string(α))
+Base.show(io::Core.IO, α::Diagram) = print(io, string(α))
 Base.print(io::Core.IO, α::Diagram) = print(io, string(α))
 
 let V::Set{UInt64}, Q::Vector{Diagram}
@@ -700,6 +707,16 @@ end
 @inline exactly(n::Int, L::Vector{Int})::Diagram = exactly!(n, copy(L))
 export atleast, atmost, exactly, atleast!, atmost!, exactly!
 
+"Returns the resulting BDD after applying the `forget` operation. Equivalent to \$\\phi|_x \\vee \\phi|_{\\neg x}\$."
+@inline forget(α::Diagram, x::Int)::Diagram = reduce!(forget_step(α, x))
+function forget_step(α::Diagram, x::Int)::Diagram
+  if is_term(α) return copy(α) end
+  if α.index > x return α end
+  if α.index < x return Diagram(α.index, forget(α.low, x), forget(α.high, x)) end
+  return apply_step(α.low, α.high, |, Dict{Tuple{Int, Int}, Diagram}())
+end
+export forget
+
 "Returns the number of nodes in the BDD graph."
 @inline Base.size(α::Diagram)::Int = (n = 0; foreach(x -> n += 1, α); n)
 
@@ -749,12 +766,12 @@ Alternatively, pretty prints using the given glyphs (default `∧`, `∨` and `�
 
 ```@example
 ϕ = (1 ∧ ¬2) ∨ (2 ∧ 3)
-print_nf(α)
+print_nf(α; out = false)
 ```
 
 ```@example
 ϕ = (1 ∧ ¬2) ∨ (2 ∧ 3)
-print_nf(α; which = "dnf", glyphs = ['+', '*', '-'])
+print_nf(α; out = false, which = "dnf", glyphs = ['+', '*', '-'])
 ```
 """
 function print_nf(α::Diagram; out::Bool = true, which = "cnf", glyphs = nothing)::Union{String, Nothing}
