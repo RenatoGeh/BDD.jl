@@ -570,8 +570,8 @@ function eliminate_step(α::Diagram, v::Int)::Diagram
   h = eliminate_step(α.high, v)
   return Diagram(α.index, l, h)
 end
-@inline eliminate(α::Diagram, V::Union{BitSet, Vector{UInt32}, Vector{UInt64}, Vector{Int32}, Vector{Int64}})::Diagram = reduce!(eliminate_step(α, V))
-function eliminate_step(α::Diagram, V::Union{BitSet, Vector{UInt32}, Vector{UInt64}, Vector{Int32}, Vector{Int64}})::Diagram
+@inline eliminate(α::Diagram, V::Union{Set, BitSet, Vector{UInt32}, Vector{UInt64}, Vector{Int32}, Vector{Int64}})::Diagram = reduce!(eliminate_step(α, V))
+function eliminate_step(α::Diagram, V::Union{Set, BitSet, Vector{UInt32}, Vector{UInt64}, Vector{Int32}, Vector{Int64}})::Diagram
   if is_term(α) return copy(α) end
   if α.index ∈ V return eliminate_step(α.low ∨ α.high, V) end
   l = eliminate_step(α.low, V)
@@ -582,7 +582,7 @@ export eliminate
 
 "Returns the resulting BDD after applying the `forget` operation. Equivalent to \$\\phi|_x \\vee \\phi|_{\\neg x}\$."
 @inline forget(α::Diagram, x::Union{UInt32, UInt64, Int32, Int64})::Diagram = eliminate(α, x)
-@inline forget(α::Diagram, X::Union{BitSet, Vector{UInt32}, Vector{UInt64}, Vector{Int32}, Vector{Int64}}) = eliminate(α, X)
+@inline forget(α::Diagram, X::Union{Set, BitSet, Vector{UInt32}, Vector{UInt64}, Vector{Int32}, Vector{Int64}}) = eliminate(α, X)
 export forget
 
 "Marginalize a variable through some binary operation."
