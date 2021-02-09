@@ -575,6 +575,8 @@ end
   α = (1 ∨ ¬2) ∧ (¬3 ∨ 4) ∧ (¬2 ∨ ¬4)
   β = (5 ∧ 1) ∨ (¬3 ∧ 2) ∨ (¬1 ∧ 4)
   @test (α → β) == ((¬α) ∨ β)
+  @test (α → 2) == ((¬α) ∨ 2)
+  @test (-3 → α) == (3 ∨ α)
 end
 
 @testset "Equality and inequality" begin
@@ -1049,6 +1051,9 @@ end
 end
 
 @testset "Forget" begin
+  @test forget(⊤, 1) == ⊤
+  @test forget(⊥, 1) == ⊥
+
   Φ = [(1 ∨ 2) ∧ (3 ∨ 4), (1 ∨ ¬2) ∧ (¬3 ∨ 4), and(collect(1:5)), or(collect(1:5)),
        (1 ∨ ¬2) ∧ (3 ∨ ¬4) ∧ (3 ∨ 5) ∧ (4 ∨ ¬5), atmost(5, collect(1:10)),
        atleast(5, collect(1:10)), exactly(5, collect(1:10)), (1 ∧ 2) ∨ (3 ∧ 4),
