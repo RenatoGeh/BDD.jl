@@ -208,8 +208,8 @@ function Base.string(α::Diagram; max_depth::Int = 20)::String
   end
   return s
 end
-Base.show(io::Core.IO, α::Diagram) = print(io, string(α))
-Base.print(io::Core.IO, α::Diagram) = print(io, string(α))
+Base.show(io::Core.IO, α::Diagram; kwargs...) = print(io, string(α; kwargs...))
+Base.print(io::Core.IO, α::Diagram; kwargs...) = print(io, string(α; kwargs...))
 
 let V::Set{UInt64}, Q::Vector{Diagram}
   function Base.iterate(α::Diagram, state=1)::Union{Nothing, Tuple{Diagram, Integer}}
@@ -570,10 +570,10 @@ function eliminate_step(α::Diagram, v::Int)::Diagram
   h = eliminate_step(α.high, v)
   return Diagram(α.index, l, h)
 end
-@inline eliminate(α::Diagram, V::Union{Set, BitSet, Vector{UInt32}, Vector{UInt64}, Vector{Int32}, Vector{Int64}})::Diagram = reduce!(eliminate_step(α, V))
+@inline eliminate(α::Diagram, V::Union{Set, BitSet, Vector{UInt32}, Vector{UInt64}, Vector{Int32}, Vector{Int64}})::Diagram = isempty(V) ? α : reduce!(eliminate_step(α, V))
 function eliminate_step(α::Diagram, V::Union{Set, BitSet, Vector{UInt32}, Vector{UInt64}, Vector{Int32}, Vector{Int64}})::Diagram
   if is_term(α) return copy(α) end
-  if α.index ∈ V return eliminate_step(α.low ∨ α.high, V) end
+  if α.index ∈ V return eliminate_step(apply_step(α.low, α.high, |, Dict{Tuple{Int, Int}, Diagram}()), V) end
   l = eliminate_step(α.low, V)
   h = eliminate_step(α.high, V)
   return Diagram(α.index, l, h)
