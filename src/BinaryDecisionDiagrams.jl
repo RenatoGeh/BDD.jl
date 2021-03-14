@@ -1,6 +1,8 @@
 module BinaryDecisionDiagrams
 
-nextid = Threads.Atomic{Int}(1)
+nextid = 1
+bdd_mutex = Threads.SpinLock()
+int_typemax = typemax(Int)
 
 """A Binary Decision Diagram.
 
@@ -24,17 +26,23 @@ mutable struct Diagram
   "Constructs a terminal."
   function Diagram(v::Bool)::Diagram
     α = new()
+    α.index, α.value = -1, v
+    lock(bdd_mutex)
     global nextid
-    α.index, α.value, α.id = -1, v, nextid[]
-    Threads.atomic_xchg!(nextid, (α.id+1) % typemax(Int))
+    α.id = nextid
+    nextid = nextid + 1 % int_typemax
+    unlock(bdd_mutex)
     return α
   end
   "Constructs a variable."
   function Diagram(i::Int, low::Diagram, high::Diagram)::Diagram
     α = new()
+    α.index, α.low, α.high = i, low, high
+    lock(bdd_mutex)
     global nextid
-    α.index, α.low, α.high, α.id = i, low, high, nextid[]
-    Threads.atomic_xchg!(nextid, (α.id+1) % typemax(Int))
+    α.id = nextid
+    nextid = nextid + 1 % int_typemax
+    unlock(bdd_mutex)
     return α
   end
   "Forcefuly construct a node with given parameters. Should not be used."

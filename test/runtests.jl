@@ -976,6 +976,20 @@ end
     F[i] = E[i] ∨ α
   end
   for i ∈ 1:m @test Ψ[i] == F[i] end
+  Φ = [(1 ∨ 2) ∧ (3 ∨ 4), (1 ∨ ¬2) ∧ (¬3 ∨ 4), and(collect(1:5)), or(collect(1:5)),
+       (1 ∨ ¬2) ∧ (3 ∨ ¬4) ∧ (3 ∨ 5) ∧ (4 ∨ ¬5), atmost(5, collect(1:10)),
+       atleast(5, collect(1:10)), exactly(5, collect(1:10)), (1 ∧ 2) ∨ (3 ∧ 4),
+       (1 ∧ ¬2) ∨ (¬3 ∧ 4), (1 ∧ ¬2) ∨ (3 ∧ ¬4) ∨ (3 ∧ 5) ∨ (4 ∧ ¬5)]
+  for i ∈ 1:length(Φ)
+    ϕ = Φ[i]
+    S = scope(ϕ)
+    ψ = [forget(ϕ, S[1:k]) for k ∈ 1:length(S)]
+    α = Vector{Diagram}(undef, length(S))
+    Threads.@threads for j ∈ 1:length(S)
+      α[j] = forget(ϕ, S[1:j])
+    end
+    for j ∈ 1:length(S) @test α[j] == ψ[j] end
+  end
 end
 
 @testset "Post-order" begin
