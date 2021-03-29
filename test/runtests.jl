@@ -1117,3 +1117,15 @@ end
     end
   end
 end
+
+@testset "Variable frequencies" begin
+  Φ = [and(collect(1:10)), (1 ∧ 2) ∨ (¬2 ∧ 3) ∨ (¬3 ∧ ¬4), or(collect(1:10)),
+       (1 ∨ 2) ∧ (¬2 ∨ 3) ∧ (¬3 ∨ ¬4), variable(1), ¬1, 1 ∨ 2, ¬1 ∨ 2]
+  F = Dict{Int, Int}.([[i => 1 for i ∈ 1:10], [1 => 1, 2 => 2, 3 => 2, 4 => 1],
+                       [i => 1 for i ∈ 1:10], [1 => 1, 2 => 2, 3 => 2, 4 => 1], [1 => 1], [1 => 1],
+                       [1 => 1, 2 => 1], [1 => 1, 2 => 1]])
+  for i ∈ 1:length(Φ)
+    G = culledfreqs(Φ[i])
+    @test G == F[i]
+  end
+end
