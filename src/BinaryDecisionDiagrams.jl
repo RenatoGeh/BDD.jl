@@ -657,18 +657,20 @@ export mentions
 @inline Base.:∈(X::Union{Vector{UInt32}, Vector{UInt64}, Vector{Int32}, Vector{Int64}}, α::Diagram)::Bool = mentions(α, X)
 @inline Base.:∉(X::Union{Vector{UInt32}, Vector{UInt64}, Vector{Int32}, Vector{Int64}}, α::Diagram)::Bool = !mentions(α, X)
 
-"""Returns an approximation (do not account for repeated nodes) of how many times each variable is
-mentioned in α."""
+"""Returns an approximation (does not account for some repeated nodes) of how many times each
+variable is mentioned in α."""
 function culledfreqs(α::Diagram)::Dict{Int, Int}
   F = Dict{Int, Int}()
+  !is_term(α) && (F[α.index] = 1)
   V = Set{UInt64}(objectid(α))
   Q = Diagram[α]
   while !isempty(Q)
     v = pop!(Q)
     if !is_term(v)
-      haskey(F, v.index) ? F[v.index] += 1 : F[v.index] = 1
       l, h = v.low, v.high
       p, q = objectid(l), objectid(h)
+      !is_term(l) && (haskey(F, l.index) ? F[l.index] += 1 : F[l.index] = 1)
+      !is_term(h) && (haskey(F, h.index) ? F[h.index] += 1 : F[h.index] = 1)
       if q ∉ V push!(Q, h); push!(V, q) end
       if p ∉ V push!(Q, l); push!(V, p) end
     end
@@ -1024,87 +1026,5 @@ function load(filename::String; kwargs...)::Diagram
   return funcs[ext](filename; kwargs...)
 end
 export load
-
-"""Returns the given example as a BDD.
-
-Possible examples:
-  1. Seven segment LED display (`:led`) [1];
-  2. Dota 2 Games Results (`:dota`) [2];
-  3. Tic-tac-toe (`:ttt`) [3].
-
-More information:
-  1. A BDD on the logical restrictions of possible LED displays, ranging from digits 0 to 9.
-     Variables correspond to segments in clockwise fashion, starting from the top-most LED.
-  2. A BDD on the cardinality restrictions of Dota 2 games, i.e. each team may select exactly 5
-     characters from the 113 character pool. No restriction is made about repeated characters, as
-     doing so causes the BDD to have its size exponentially explode. An optional keyword argument
-     `both_teams` returns a cardinality problem on only one of the teams.
-  3. A BDD on the possible configurations of tic-tac-toe. Each square corresponds to a pair of
-     variables ``(Y_i, Y_{i+9})``, where ``Y_i`` is true when an ``\\times`` is drawn in square `i`,
-     and false when ``\\bigcirc``. Variable ``Y_{i+9}`` is true when slot ``i`` has not yet been
-     drawn on; else, it is set to false. This binarization of each square requires us to make the
-     following assumption:
-     ```math
-     R(Y_1,\\ldots,Y_{18})=\\bigwedge_{i=1}^9\\neg\\left\\(Y_i\\wedge Y_{i+9}\\right)
-     ```
-     With the above restriction set, we conjoin it with all possible endgame configurations, with
-     a last variable ``Y_19`` set to true when the configuration represents a win for ``\\times`` [3].
-
-References:
-  [1] - Tractable inference in credal sentential decision diagrams, Mattei et al, IJAR 2020
-  [2] - [Dota 2 Games Results UCI Repository](https://archive.ics.uci.edu/ml/datasets/Dota2+Games+Results)
-  [3] - [Tic-tac-toe Endgame UCI Repository](https://archive.ics.uci.edu/ml/datasets/Tic-Tac-Toe+Endgame)
-"""
-function example(eg::Symbol; both_teams = true, n = 10, m = 10)::Diagram
-  if eg == :led
-    return # Segments are clockwise starting from top. Last
-           # variable is middle (central) segment.
-           ( 1 ∧  2 ∧  3 ∧  4 ∧  5 ∧  6 ∧ ¬7) ∨ # 0
-           (¬1 ∧  2 ∧  3 ∧ ¬4 ∧ ¬5 ∧ ¬6 ∧ ¬7) ∨ # 1
-           ( 1 ∧  2 ∧ ¬3 ∧  4 ∧  5 ∧ ¬6 ∧  7) ∨ # 2
-           ( 1 ∧  2 ∧  3 ∧  4 ∧ ¬5 ∧ ¬6 ∧  7) ∨ # 3
-           (¬1 ∧  2 ∧  3 ∧ ¬4 ∧ ¬5 ∧  6 ∧  7) ∨ # 4
-           ( 1 ∧ ¬2 ∧  3 ∧  4 ∧ ¬5 ∧  6 ∧  7) ∨ # 5
-           ( 1 ∧ ¬2 ∧  3 ∧  4 ∧  5 ∧  6 ∧  7) ∨ # 6
-           ( 1 ∧  2 ∧  3 ∧ ¬4 ∧ ¬5 ∧ ¬6 ∧ ¬7) ∨ # 7
-           ( 1 ∧  2 ∧  3 ∧  4 ∧  5 ∧  6 ∧  7) ∨ # 8
-           ( 1 ∧  2 ∧  3 ∧  4 ∧ ¬5 ∧  6 ∧  7)  # 9
-  elseif eg == :dota
-    m, n = 5, 113
-    α = exactly!(m, collect(1:n))
-    return both_teams ? α ∧ exactly!(m, collect(n+1:2*n)) : α
-  elseif eg == :sushi
-    X = collect(1:n)
-    Y = collect(1:m)
-    A = Matrix{Int}(undef, (n, m))
-    @inbounds for i ∈ X, j ∈ Y
-      A[i, j] = (i-1)*n+j
-    end
-    I = ⊤
-    @inbounds for i ∈ X
-      V = -A[i,:]
-      I_i = ⊥
-      @inbounds for j ∈ Y
-        V[j] = -V[j]
-        I_i = I_i ∨ and(V)
-        V[j] = -V[j]
-      end
-      I = I ∧ I_i
-    end
-    P = ⊤
-    @inbounds for i ∈ X
-      V = -A[:,i]
-      P_i = ⊥
-      @inbounds for j ∈ X
-        V[j] = -V[j]
-        P_i = P_i ∨ and(V)
-        V[j] = -V[j]
-      end
-      P = P ∧ P_i
-    end
-    return I ∧ P
-  end
-  throw(ArgumentError(eg, "Example BDD must be any one of the predefined symbols."))
-end
 
 end # module
