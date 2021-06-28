@@ -35,7 +35,7 @@ mutable struct Diagram
     return α
   end
   "Constructs a variable."
-  function Diagram(i::Int, low::Diagram, high::Diagram)::Diagram
+  function Diagram(i::Integer, low::Diagram, high::Diagram)::Diagram
     α = new()
     α.index, α.low, α.high = i, low, high
     lock(bdd_mutex)
@@ -46,7 +46,7 @@ mutable struct Diagram
     return α
   end
   "Forcefuly construct a node with given parameters. Should not be used."
-  function Diagram(i::Int, id::Int, low::Diagram, high::Diagram)::Diagram
+  function Diagram(i::Integer, id::Integer, low::Diagram, high::Diagram)::Diagram
     α = new()
     α.index, α.low, α.high, α.id = i, low, high, id
     return α
@@ -91,33 +91,33 @@ export is_var, is_lit, is_atom
 
 "Negates this boolean function."
 @inline (¬)(α::Diagram)::Diagram = is_⊤(α) ? ⊥ : is_⊥(α) ? ⊤ : Diagram(α.index, ¬α.low, ¬α.high)
-@inline (¬)(x::Int)::Diagram = x > 0 ? Diagram(x, ⊤, ⊥) : x < 0 ? Diagram(-x, ⊥, ⊤) : ⊥
+@inline (¬)(x::Integer)::Diagram = x > 0 ? Diagram(x, ⊤, ⊥) : x < 0 ? Diagram(-x, ⊥, ⊤) : ⊥
 @inline (¬)(x::Bool)::Bool = !x
 export ¬
 
 "Returns a conjunction over the given boolean functions."
 @inline (∧)(α::Diagram, β::Diagram)::Diagram = apply(α, β, &)
-@inline (∧)(x::Int, β::Diagram)::Diagram = apply(variable(x), β, &)
-@inline (∧)(α::Diagram, x::Int)::Diagram = apply(α, variable(x), &)
-@inline (∧)(x::Int, y::Int)::Diagram = apply(variable(x), variable(y), &)
+@inline (∧)(x::Integer, β::Diagram)::Diagram = apply(variable(x), β, &)
+@inline (∧)(α::Diagram, x::Integer)::Diagram = apply(α, variable(x), &)
+@inline (∧)(x::Integer, y::Integer)::Diagram = apply(variable(x), variable(y), &)
 @inline (∧)(x::Bool, y::Bool)::Bool = x & y
 export ∧
 "Returns a conjunction over the given boolean functions."
 @inline and(α::Diagram, β::Diagram)::Diagram = α ∧ β
-@inline and(x::Int, β::Diagram)::Diagram = x ∧ β
-@inline and(α::Diagram, x::Int)::Diagram = α ∧ x
-@inline and(x::Int, y::Int)::Diagram = x ∧ y
+@inline and(x::Integer, β::Diagram)::Diagram = x ∧ β
+@inline and(α::Diagram, x::Integer)::Diagram = α ∧ x
+@inline and(x::Integer, y::Integer)::Diagram = x ∧ y
 function and(Φ::Vararg{Diagram})::Diagram
   α = first(Φ)
   for i ∈ 2:length(Φ) α = α ∧ Φ[i] end
   return α
 end
-@inline and(Φ::Vector{Diagram})::Diagram = and(Φ...)
-@inline and(Φ::Vararg{Int})::Diagram = and(variable.(Φ)...)
-@inline and(Φ::Vector{Int})::Diagram = and(variable.(Φ)...)
-function and(Φ::Vararg{Union{Int, Diagram}})::Diagram
+@inline and(Φ::AbstractVector{Diagram})::Diagram = and(Φ...)
+@inline function and(Φ::Vararg{T})::Diagram where T <: Integer and(variable.(Φ)...) end
+@inline function and(Φ::AbstractVector{T})::Diagram where T <: Integer and(variable.(Φ)...) end
+function and(Φ::Vararg{Union{T, Diagram}})::Diagram where T <: Integer
   f = first(Φ)
-  α = f isa Int ? variable(f) : f
+  α = f isa Integer ? variable(f) : f
   for i ∈ 2:length(Φ) α = α ∧ Φ[i] end
   return α
 end
@@ -125,27 +125,27 @@ export and
 
 "Returns a disjunction over the given boolean functions."
 @inline (∨)(α::Diagram, β::Diagram)::Diagram = apply(α, β, |)
-@inline (∨)(x::Int, β::Diagram)::Diagram = apply(variable(x), β, |)
-@inline (∨)(α::Diagram, x::Int)::Diagram = apply(α, variable(x), |)
-@inline (∨)(x::Int, y::Int)::Diagram = apply(variable(x), variable(y), |)
+@inline (∨)(x::Integer, β::Diagram)::Diagram = apply(variable(x), β, |)
+@inline (∨)(α::Diagram, x::Integer)::Diagram = apply(α, variable(x), |)
+@inline (∨)(x::Integer, y::Integer)::Diagram = apply(variable(x), variable(y), |)
 @inline (∨)(x::Bool, y::Bool)::Bool = x | y
 export ∨
 "Returns a disjunction over the given boolean functions."
 @inline or(α::Diagram, β::Diagram)::Diagram = α ∨ β
-@inline or(x::Int, β::Diagram)::Diagram = x ∨ β
-@inline or(α::Diagram, x::Int)::Diagram = α ∨ x
-@inline or(x::Int, y::Int)::Diagram = x ∨ y
+@inline or(x::Integer, β::Diagram)::Diagram = x ∨ β
+@inline or(α::Diagram, x::Integer)::Diagram = α ∨ x
+@inline or(x::Integer, y::Integer)::Diagram = x ∨ y
 @inline function or(Φ::Vararg{Diagram})::Diagram
   α = first(Φ)
   for i ∈ 2:length(Φ) α = α ∨ Φ[i] end
   return α
 end
-@inline or(Φ::Vector{Diagram})::Diagram = or(Φ...)
-@inline or(Φ::Vararg{Int})::Diagram = or(variable.(Φ)...)
-@inline or(Φ::Vector{Int})::Diagram = or(variable.(Φ)...)
-function or(Φ::Vararg{Union{Int, Diagram}})::Diagram
+@inline or(Φ::AbstractVector{Diagram})::Diagram = or(Φ...)
+@inline function or(Φ::Vararg{T})::Diagram where T <: Integer or(variable.(Φ)...) end
+@inline function or(Φ::AbstractVector{T})::Diagram where T <: Integer or(variable.(Φ)...) end
+function or(Φ::Vararg{Union{T, Diagram}})::Diagram where T <: Integer
   f = first(Φ)
-  α = f isa Int ? variable(f) : f
+  α = f isa Integer ? variable(f) : f
   for i ∈ 2:length(Φ) α = α ∨ Φ[i] end
   return α
 end
@@ -153,36 +153,35 @@ export or
 
 "Returns a xor of the given boolean functions."
 @inline Base.:⊻(α::Diagram, β::Diagram)::Diagram = apply(α, β, ⊻)
-@inline Base.:⊻(x::Int, β::Diagram)::Diagram = apply(variable(x), β, ⊻)
-@inline Base.:⊻(α::Diagram, x::Int)::Diagram = apply(α, variable(x), ⊻)
-@inline Base.:⊻(x::Int, y::Int)::Diagram = apply(variable(x), variable(y), ⊻)
+@inline Base.:⊻(x::Integer, β::Diagram)::Diagram = apply(variable(x), β, ⊻)
+@inline Base.:⊻(α::Diagram, x::Integer)::Diagram = apply(α, variable(x), ⊻)
 
 @inline (→)(α::Diagram, β::Diagram)::Diagram = (¬α) ∨ β
-@inline (→)(x::Int, β::Diagram)::Diagram = (¬x) ∨ β
-@inline (→)(α::Diagram, x::Int)::Diagram = (¬α) ∨ x
-@inline (→)(x::Int, y::Int)::Diagram = (¬x) ∨ y
+@inline (→)(x::Integer, β::Diagram)::Diagram = (¬x) ∨ β
+@inline (→)(α::Diagram, x::Integer)::Diagram = (¬α) ∨ x
+@inline (→)(x::Integer, y::Integer)::Diagram = (¬x) ∨ y
 @inline (→)(x::Bool, y::Bool)::Bool = (!x) | y
 export →
 
 "Returns whether the two given boolean functions are equivalent."
 @inline Base.:(==)(α::Diagram, β::Diagram)::Bool = is_⊤(apply(α, β, ==))
-@inline Base.:(==)(x::Int, β::Diagram)::Bool = is_var(β) && β.index == x && ((x > 0 && β.low == ⊥ && β.high == ⊤) || (x < 0 && β.low == ⊤ && β.high == ⊥))
-@inline Base.:(==)(α::Diagram, y::Int)::Bool = y == α
+@inline Base.:(==)(x::Integer, β::Diagram)::Bool = is_var(β) && β.index == x && ((x > 0 && β.low == ⊥ && β.high == ⊤) || (x < 0 && β.low == ⊤ && β.high == ⊥))
+@inline Base.:(==)(α::Diagram, y::Integer)::Bool = y == α
 @inline Base.isequal(α::Diagram, β::Diagram)::Bool = α == β
-@inline Base.isequal(x::Int, β::Diagram)::Bool = x == β
-@inline Base.isequal(α::Diagram, y::Int)::Bool = y == α
+@inline Base.isequal(x::Integer, β::Diagram)::Bool = x == β
+@inline Base.isequal(α::Diagram, y::Integer)::Bool = y == α
 
 "Returns whether the two given boolean functions are not equivalent."
 @inline Base.:(!=)(α::Diagram, β::Diagram)::Bool = !(α == β)
-@inline Base.:(!=)(x::Int, β::Diagram)::Bool = !(x == β)
-@inline Base.:(!=)(α::Diagram, y::Int)::Bool = !(y == α)
+@inline Base.:(!=)(x::Integer, β::Diagram)::Bool = !(x == β)
+@inline Base.:(!=)(α::Diagram, y::Integer)::Bool = !(y == α)
 
 "Returns a new terminal node of given boolean value."
 @inline terminal(v::Bool)::Diagram = Diagram(v)
 export terminal
 
 "Returns a Diagram representing a single variable. If negative, negate variable."
-@inline variable(i::Int)::Diagram = i > 0 ? Diagram(i, ⊥, ⊤) : Diagram(-i, ⊤, ⊥)
+@inline variable(i::Integer)::Diagram = i > 0 ? Diagram(i, ⊥, ⊤) : Diagram(-i, ⊤, ⊥)
 export variable
 
 "Returns 0 if x is not a literal; else returns the literal's sign."
@@ -193,7 +192,7 @@ export variable
 export to_int
 
 "Return string representation of Diagram α."
-function Base.string(α::Diagram; max_depth::Int = 20)::String
+function Base.string(α::Diagram; max_depth::Integer = 20)::String
   s = ""
   S = Tuple{Diagram, Int, Char}[(α, 0, '\0')]
   d = 0
@@ -383,32 +382,32 @@ function apply_step(α::Diagram, β::Diagram, ⊕, T::Dict{Tuple{Int, Int}, Diag
   return r
 end
 
-@inline function vec_to_dict(X::AbstractArray{Int})::Dict{Int, Bool}
-  D = Dict{Int, Bool}()
+@inline function vec_to_dict(X::AbstractArray{T})::Dict{Integer, Bool} where T <: Integer
+  D = Dict{Integer, Bool}()
   for x ∈ X if x < 0 D[-x] = false else D[x] = true end end
   return D
 end
 
 "Returns a new reduced Diagram restricted to instantiation X."
-@inline restrict(α::Diagram, X::Dict{Int, Bool})::Diagram = reduce!(restrict_step(α, X, Dict{Int, Diagram}()))
-@inline restrict(α::Diagram, X::AbstractArray{Int})::Diagram = reduce!(restrict_step(α, vec_to_dict(X), Dict{Int, Diagram}()))
+@inline function restrict(α::Diagram, X::Dict{T, Bool})::Diagram where T <: Integer reduce!(restrict_step(α, X, Dict{Int, Diagram}())) end
+@inline function restrict(α::Diagram, X::AbstractArray{T})::Diagram where T <: Integer reduce!(restrict_step(α, vec_to_dict(X), Dict{Int, Diagram}())) end
 @inline restrict(α::Diagram, X::Union{AbstractArray{Bool}, BitVector})::Diagram = reduce!(restrict_step(α, X, Dict{Int, Diagram}()))
-@inline restrict(α::Diagram, x::Int)::Diagram = reduce!(restrict_step(α, abs(x), x > 0, Dict{Int, Diagram}()))
+@inline restrict(α::Diagram, x::Integer)::Diagram = reduce!(restrict_step(α, abs(x), x > 0, Dict{Int, Diagram}()))
 export restrict
 
 "Returns a new reduced Diagram restricted to instantiation X."
-@inline Base.:|(α::Diagram, X::Dict{Int, Bool})::Diagram = restrict(α, X)
-@inline Base.:|(α::Diagram, X::AbstractArray{Int})::Diagram = restrict(α, X)
-@inline Base.:|(α::Diagram, x::Int)::Diagram = restrict(α, x)
+@inline function Base.:|(α::Diagram, X::Dict{T, Bool})::Diagram where T <: Integer restrict(α, X) end
+@inline function Base.:|(α::Diagram, X::AbstractArray{T})::Diagram where T <: Integer restrict(α, X) end
+@inline Base.:|(α::Diagram, x::Integer)::Diagram = restrict(α, x)
 @inline Base.:|(α::Diagram, X::Union{AbstractArray{Bool}, BitVector})::Diagram = restrict(α, X)
 
-@inline (α::Diagram)(X::Dict{Int, Bool})::Bool = is_⊤(restrict(α, X))
-@inline (α::Diagram)(X::AbstractArray{Int})::Bool = is_⊤(α|X)
+@inline function (α::Diagram)(X::Dict{T, Bool})::Bool where T <: Integer is_⊤(restrict(α, X)) end
+@inline function (α::Diagram)(X::AbstractArray{T})::Bool where T <: Integer is_⊤(α|X) end
 @inline (α::Diagram)(X::Union{AbstractArray{Bool}, BitVector})::Bool = is_⊤(α|X)
-@inline (α::Diagram)(x::Int)::Bool = is_⊤(α|x)
+@inline (α::Diagram)(x::Integer)::Bool = is_⊤(α|x)
 
 "Returns a new Diagram restricted to instantiation X."
-function restrict_step(α::Diagram, X::Dict{Int, Bool}, V::Dict{Int, Diagram})::Diagram
+function restrict_step(α::Diagram, X::Dict{T, Bool}, V::Dict{Int, Diagram})::Diagram where T <: Integer
   if haskey(V, α.id) return V[α.id]
   elseif is_term(α) return copy(α) end
   x = α.index
@@ -439,7 +438,7 @@ function restrict_step(α::Diagram, X::Union{BitVector, AbstractArray{Bool}}, V:
   return restrict_step(α.low, X, V)
 end
 
-function restrict_step(α::Diagram, v::Int, y::Bool, V::Dict{Int, Diagram})::Diagram
+function restrict_step(α::Diagram, v::Integer, y::Bool, V::Dict{Int, Diagram})::Diagram
   if haskey(V, α.id) return V[α.id]
   elseif is_term(α) return copy(α) end
   x = α.index
@@ -461,7 +460,7 @@ end
 @inline Base.length(P::Permutations)::Int = P.m
 
 "Compute all possible valuations of scope V."
-@inline valuations(V::Union{Set{Int}, Vector{Int}, UnitRange{Int}}) = Permutations(collect(V), 2^length(V))
+@inline valuations(V::Union{Set{T}, AbstractVector{T}, UnitRange{T}}) where T <: Integer = Permutations(collect(V), 2^length(V))
 export valuations
 function Base.iterate(P::Permutations, state=0)::Union{Nothing, Tuple{Dict{Int, Bool}, Int}}
   s = state + 1
@@ -471,7 +470,7 @@ function Base.iterate(P::Permutations, state=0)::Union{Nothing, Tuple{Dict{Int, 
 end
 
 "Computes all possible valuations of scope V and returns as a BitMatrix. Up to 64 variables."
-function all_valuations(V::Union{Set{Int}, Vector{Int}, UnitRange{Int}})::BitMatrix
+function all_valuations(V::Union{Set{T}, AbstractVector{T}, UnitRange{T}})::BitMatrix where T <: Integer
   m = length(V)
   n = 2^m
   M = BitMatrix(undef, (n, m))
@@ -493,7 +492,7 @@ end
 @inline Base.length(P::ConjoinedPermutations)::Int = P.m
 
 "Computes all possible valuations of scope V as conjunctions."
-@inline conjunctions(V::Union{Set{Int}, Vector{Int}, UnitRange{Int}}) = ConjoinedPermutations(sort!(collect(V)), 2^length(V))
+@inline conjunctions(V::Union{Set{T}, AbstractVector{T}, UnitRange{T}}) where T <: Integer = ConjoinedPermutations(sort!(collect(V)), 2^length(V))
 export conjunctions
 function Base.iterate(P::ConjoinedPermutations, state=0)::Union{Nothing, Tuple{Diagram, Int}}
   s = state + 1
@@ -521,7 +520,7 @@ end
 @inline Base.length(P::ConvalPermutations)::Int = P.m
 
 "Computes all possible valuations of scope V as both conjunctions and instantiation values."
-@inline convals(V::Union{Set{Int}, Vector{Int}, UnitRange{Int}}) = ConvalPermutations(sort!(collect(V)), 2^length(V))
+@inline convals(V::Union{Set{T}, AbstractVector{T}, UnitRange{T}}) where T <: Integer = ConvalPermutations(sort!(collect(V)), 2^length(V))
 export convals
 function Base.iterate(P::ConvalPermutations, state=0)::Union{Nothing, Tuple{Tuple{Diagram, Dict{Int, Bool}}, Int}}
   s = state + 1
@@ -543,12 +542,12 @@ function Base.iterate(P::ConvalPermutations, state=0)::Union{Nothing, Tuple{Tupl
 end
 
 "Performs Shannon's Decomposition on the Diagram α, given a variable to isolate."
-function shannon(α::Diagram, v::Int)::Tuple{Diagram, Diagram, Diagram, Diagram}
-  return (variable(v), α|Dict{Int, Bool}(v=>true), variable(-v), α|Dict{Int, Bool}(v=>false))
+function shannon(α::Diagram, v::Integer)::Tuple{Diagram, Diagram, Diagram, Diagram}
+  return (variable(v), α|Dict{Integer, Bool}(v=>true), variable(-v), α|Dict{Integer, Bool}(v=>false))
 end
 
 "Performs Shannon's Decomposition on the Diagram α, given a set of variables to isolate."
-function shannon(α::Diagram, V::Union{Set{Int}, Vector{Int}})::Vector{Tuple{Diagram, Diagram}}
+function shannon(α::Diagram, V::Union{Set{T}, AbstractVector{T}})::Vector{Tuple{Diagram, Diagram}} where T <: Integer
   Δ = Vector{Tuple{Diagram, Diagram}}()
   for (β, X) ∈ convals(V) push!(Δ, (β, α|X)) end
   return Δ
@@ -556,7 +555,7 @@ end
 
 """Performs Shannon's Decomposition on the Diagram α, given a set of variables to isolate. Any
 decomposition that results in a ⊥ is discarded."""
-function shannon!(α::Diagram, V::Union{Set{Int}, Vector{Int}})::Vector{Tuple{Diagram, Diagram}}
+function shannon!(α::Diagram, V::Union{Set{T}, AbstractVector{T}})::Vector{Tuple{Diagram, Diagram}} where T <: Integer
   Δ = Vector{Tuple{Diagram, Diagram}}()
   for (β, X) ∈ convals(V)
     ϕ = α|X
@@ -569,8 +568,8 @@ end
 export shannon, shannon!
 
 "Eliminate a variable through disjunction. Equivalent to the expression (ϕ|x ∨ ϕ|¬x)."
-@inline eliminate(α::Diagram, v::Int)::Diagram = reduce!(eliminate_step(α, v))
-function eliminate_step(α::Diagram, v::Int)::Diagram
+@inline eliminate(α::Diagram, v::Integer)::Diagram = reduce!(eliminate_step(α, v))
+function eliminate_step(α::Diagram, v::Integer)::Diagram
   if is_term(α) return copy(α) end
   if α.index == v return α.low ∨ α.high end
   # If idempotent (which is the case), then recursion suffices.
@@ -578,8 +577,8 @@ function eliminate_step(α::Diagram, v::Int)::Diagram
   h = eliminate_step(α.high, v)
   return Diagram(α.index, l, h)
 end
-@inline eliminate(α::Diagram, V::Union{Set, BitSet, Vector{UInt32}, Vector{UInt64}, Vector{Int32}, Vector{Int64}})::Diagram = isempty(V) ? α : reduce!(eliminate_step(α, V))
-function eliminate_step(α::Diagram, V::Union{Set, BitSet, Vector{UInt32}, Vector{UInt64}, Vector{Int32}, Vector{Int64}})::Diagram
+@inline eliminate(α::Diagram, V::Union{Set, BitSet, AbstractVector{T}}) where T <: Integer = isempty(V) ? α : reduce!(eliminate_step(α, V))
+function eliminate_step(α::Diagram, V::Union{Set, BitSet, AbstractVector{T}})::Diagram where T <: Integer
   if is_term(α) return copy(α) end
   if α.index ∈ V return eliminate_step(α.low ∨ α.high, V) end
   l = eliminate_step(α.low, V)
@@ -589,14 +588,14 @@ end
 export eliminate
 
 "Returns the resulting BDD after applying the `forget` operation. Equivalent to \$\\phi|_x \\vee \\phi|_{\\neg x}\$."
-@inline forget(α::Diagram, x::Union{UInt32, UInt64, Int32, Int64})::Diagram = eliminate(α, x)
-@inline forget(α::Diagram, X::Union{Set, BitSet, Vector{UInt32}, Vector{UInt64}, Vector{Int32}, Vector{Int64}}) = eliminate(α, X)
+@inline forget(α::Diagram, x::Integer)::Diagram = eliminate(α, x)
+@inline forget(α::Diagram, X::Union{Set, BitSet, AbstractVector{T}}) where T <: Integer = eliminate(α, X)
 export forget
 
 "Marginalize a variable through some binary operation."
-@inline marginalize(α::Diagram, v::Int, ⊕)::Diagram = is_term(α) ? Diagram(α.value ⊕ α.value) : reduce!(marginalize_step(α, v, ⊕))
+@inline marginalize(α::Diagram, v::Integer, ⊕)::Diagram = is_term(α) ? Diagram(α.value ⊕ α.value) : reduce!(marginalize_step(α, v, ⊕))
 export marginalize
-function marginalize_step(α::Diagram, v::Int, ⊕)::Diagram
+function marginalize_step(α::Diagram, v::Integer, ⊕)::Diagram
   if α.index == v return apply(α.low, α.high, ⊕) end
   if is_term(α) return Diagram(α.value ⊕ α.value) end
   l, h = α.low, α.high
@@ -620,7 +619,7 @@ end
 export scopeset
 
 "Returns whether the formula (i.e. BDD) mentions a variable."
-function mentions(α::Diagram, x::Union{UInt32, UInt64, Int32, Int64})::Bool
+function mentions(α::Diagram, x::Integer)::Bool
   V = Set{UInt64}(objectid(α))
   Q = Diagram[α]
   while !isempty(Q)
@@ -635,7 +634,7 @@ function mentions(α::Diagram, x::Union{UInt32, UInt64, Int32, Int64})::Bool
   end
   return false
 end
-function mentions(α::Diagram, X::Union{Vector{UInt32}, Vector{UInt64}, Vector{Int32}, Vector{Int64}})::Bool
+function mentions(α::Diagram, X::AbstractVector{T})::Bool where T <: Integer
   M = Set{Int}(X)
   V = Set{UInt64}(objectid(α))
   Q = Diagram[α]
@@ -652,10 +651,10 @@ function mentions(α::Diagram, X::Union{Vector{UInt32}, Vector{UInt64}, Vector{I
   return false
 end
 export mentions
-@inline Base.:∈(x::Union{UInt32, UInt64, Int32, Int64}, α::Diagram)::Bool = mentions(α, x)
-@inline Base.:∉(x::Union{UInt32, UInt64, Int32, Int64}, α::Diagram)::Bool = !mentions(α, x)
-@inline Base.:∈(X::Union{Vector{UInt32}, Vector{UInt64}, Vector{Int32}, Vector{Int64}}, α::Diagram)::Bool = mentions(α, X)
-@inline Base.:∉(X::Union{Vector{UInt32}, Vector{UInt64}, Vector{Int32}, Vector{Int64}}, α::Diagram)::Bool = !mentions(α, X)
+@inline Base.:∈(x::Integer, α::Diagram)::Bool = mentions(α, x)
+@inline Base.:∉(x::Integer, α::Diagram)::Bool = !mentions(α, x)
+@inline Base.:∈(X::AbstractVector{T}, α::Diagram) where T <: Integer = mentions(α, X)
+@inline Base.:∉(X::AbstractVector{T}, α::Diagram) where T <: Integer = !mentions(α, X)
 
 """Returns an approximation (does not account for some repeated nodes) of how many times each
 variable is mentioned in α."""
@@ -698,8 +697,8 @@ function lit_vec(α::Diagram)::Tuple{BitVector, Vector{Int}}
 end
 export lit_vec
 
-"Returns α as an Int32 literal. Assumes α is a leaf node."
-@inline to_lit(α::Diagram)::Int32 = Int32(is_⊥(α.low) ? α.index : -α.index)
+"Returns α as an integer literal. Assumes α is a leaf node."
+@inline to_lit(α::Diagram, ::Type{T} = Int32) where T <: Integer = convert(T, is_⊥(α.low) ? α.index : -α.index)
 export to_lit
 
 """Translates a cardinality constraint in normal pseudo-boolean constraint form into a BDD.
@@ -710,12 +709,12 @@ Argument L corresponds to the vector of literals to be chosen from; b is how man
 selected.
 
 See Eén and Sörensson 2006."""
-@inline function from_npbc(L::Vector{Int}, b::Int)::Diagram
-  return reduce!(from_npbc_step(L, b, length(L), 0, Dict{Tuple{Int, Int}, Diagram}(),
+@inline function from_npbc(L::Vector{T}, b::Integer)::Diagram where T <: Integer
+  return reduce!(from_npbc_step(L, b, length(L), 0, Dict{Tuple{Integer, Integer}, Diagram}(),
                                 Diagram(false), Diagram(true)))
 end
-function from_npbc_step(L::Vector{Int}, b::Int, n::Int, s::Int, M::Dict{Tuple{Int, Int}, Diagram},
-                        reuse_⊥::Diagram, reuse_⊤::Diagram)::Diagram
+function from_npbc_step(L::Vector{T}, b::Integer, n::Integer, s::Integer, M::Dict{Tuple{Integer, Integer}, Diagram},
+                        reuse_⊥::Diagram, reuse_⊤::Diagram)::Diagram where T <: Integer
   if s >= b return reuse_⊤
   elseif s + n < b return reuse_⊥ end
   k = (n, s)
@@ -737,24 +736,24 @@ function from_npbc_step(L::Vector{Int}, b::Int, n::Int, s::Int, M::Dict{Tuple{In
 end
 
 "Constructs a BDD mapping to true if at least n literals in L are in the input; otherwise false."
-@inline atleast!(n::Int, L::Vector{Int})::Diagram = from_npbc(sort!(L, by=x->abs(x), rev=true), n)
+@inline atleast!(n::Integer, L::Vector{T}) where T <: Integer = from_npbc(sort!(L, by=x->abs(x), rev=true), n)
 "Constructs a BDD mapping to true if at least n literals in L are in the input; otherwise false."
-@inline atleast(n::Int, L::Vector{Int})::Diagram = atleast!(n, copy(L))
+@inline atleast(n::Integer, L::Vector{T}) where T <: Integer = atleast!(n, copy(L))
 "Constructs a BDD mapping to true if at most n literals in L are in the input; otherwise false."
-@inline atmost!(n::Int, L::Vector{Int})::Diagram = (m = length(L); L .= -L; from_npbc(sort!(L, by=x->abs(x), rev=true), m-n))
+@inline atmost!(n::Integer, L::Vector{T}) where T <: Integer = (m = length(L); L .= -L; from_npbc(sort!(L, by=x->abs(x), rev=true), m-n))
 "Constructs a BDD mapping to true if at most n literals in L are in the input; otherwise false."
-@inline atmost(n::Int, L::Vector{Int})::Diagram = atmost!(n, copy(L))
+@inline atmost(n::Integer, L::Vector{T}) where T <: Integer = atmost!(n, copy(L))
 "Constructs a BDD mapping to true if exactly n literals in L are in the input; otherwise false."
-@inline exactly!(n::Int, L::Vector{Int})::Diagram = (α = from_npbc(sort!(L, by=x->abs(x), rev=true), n); β = from_npbc(L .= -L, length(L)-n); α ∧ β)
+@inline exactly!(n::Integer, L::Vector{T}) where T <: Integer = (α = from_npbc(sort!(L, by=x->abs(x), rev=true), n); β = from_npbc(L .= -L, length(L)-n); α ∧ β)
 "Constructs a BDD mapping to true if exactly n literals in L are in the input; otherwise false."
-@inline exactly(n::Int, L::Vector{Int})::Diagram = exactly!(n, copy(L))
+@inline exactly(n::Integer, L::Vector{T}) where T <: Integer = exactly!(n, copy(L))
 export atleast, atmost, exactly, atleast!, atmost!, exactly!
 
 "Returns the number of nodes in the BDD graph."
 @inline Base.size(α::Diagram)::Int = (n = 0; foreach(x -> n += 1, α); n)
 
 "Returns whether a variable x appears as a positive literal in α, given that α is a conjunction of literals."
-function lit_val(α::Diagram, x::Union{UInt16, UInt32, UInt64, Int32, Int64})::Bool
+function lit_val(α::Diagram, x::Integer)::Bool
   Q = Diagram[α]
   u = abs(x)
   # BDDs guarantee variables are top-down increasing.

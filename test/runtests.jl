@@ -554,8 +554,8 @@ end
   @test ¬c ⊻ ¬¬c == ⊤
   @test ¬¬(x1 ⊻ ¬x3 ⊻ x2) ⊻ ¬(x1 ⊻ ¬x3 ⊻ x2) == ⊤
 
-  @test 1 ⊻ 2 == x1 ⊻ x2
-  @test 1 ⊻ ¬3 == x1 ⊻ ¬x3
+  @test variable(1) ⊻ variable(2) == x1 ⊻ x2
+  @test variable(1) ⊻ ¬3 == x1 ⊻ ¬x3
   @test ¬(¬2 ⊻ 1) == ¬(¬x2 ⊻ x1)
   @test ¬(1 ⊻ ¬3 ⊻ 2) == ¬(x1 ⊻ ¬x3 ⊻ x2)
   @test ¬(1 ⊻ (¬2 ∨ 3) ⊻ ¬(3 ∧ 2)) ∧ (3 ∧ ¬2) == ¬(x1 ⊻ (¬x2 ∨ x3) ⊻ ¬(x3 ∧ x2)) ∧ (x3 ∧ ¬x2)
