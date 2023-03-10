@@ -181,7 +181,7 @@ export →
 export terminal
 
 "Returns a Diagram representing a single variable. If negative, negate variable."
-@inline variable(i::Integer)::Diagram = i > 0 ? Diagram(i, ⊥, ⊤) : Diagram(-i, ⊤, ⊥)
+@inline variable(i::Integer)::Diagram = (@assert i != 0 "Variable cannot be zero!"; i > 0 ? Diagram(i, ⊥, ⊤) : Diagram(-i, ⊤, ⊥))
 export variable
 
 "Returns 0 if x is not a literal; else returns the literal's sign."
